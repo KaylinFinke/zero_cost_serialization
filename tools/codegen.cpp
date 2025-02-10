@@ -2,15 +2,18 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdio>
+#include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
 template <std::size_t N>
 [[nodiscard]] consteval auto make_braces() noexcept
 {
+	using namespace std::literals::string_view_literals;
 	std::array<char, N * 3 + not N> s{};
 	for (std::size_t i = 0; i not_eq s.size(); ++i)
-		s[i] = "{},"[i % 3];
+		s.at(i) = "{},"sv[i % 3];
 	s.back() = {};
 	return s;
 }
@@ -34,27 +37,30 @@ template <std::size_t N>
 	return N ? digits_pack(std::make_index_sequence<N>()) : std::size_t{};
 }
 
-[[nodiscard]] constexpr auto to_chars(char* end, std::integral auto n) noexcept
+constexpr auto to_chars(std::span<char> s, std::integral auto n) noexcept
 {
-	auto s = end;
+	using namespace std::literals::string_view_literals;
+	auto i = s.size();
 	auto neg = n < 0;
 	do {
-		*--s = "0123456789"[n % 10];
+		s[--i] = "0123456789"sv[n % 10];
 		n /= 10;
 	} while (n);
-	if (neg) *--s = '-';
-	return end;
+	if (neg) s[--i] = '-';
 }
 
 template <std::size_t N>
 [[nodiscard]] consteval auto make_binds() noexcept
 {
 	std::array<char, 2 * N + not N + digits<N>()> s{};
-	char* begin = s.data();
-	for (auto n = std::size_t{}; n < N; ++n) {
-		*begin++ = 'v';
-		begin = to_chars(begin + digits_n(n), n);
-		*begin++ = ',';
+	std::span v = std::span(s).subspan(0);
+	for (auto n = std::size_t{}; n not_eq N; ++n) {
+		v.front() = 'v';
+		v = v.subspan(1);
+		to_chars(v.first(std::size_t(digits_n(n))), n);
+		v = v.subspan(std::size_t(digits_n(n)));
+		v.front() = ',';
+		v = v.subspan(1);
 	}
 	s.back() = {};
 	return s;
