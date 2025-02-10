@@ -153,10 +153,10 @@ static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<c
 template <typename... Ts>
 auto test() noexcept
 {
-	auto fun = [](const char*, std::uint32_t u, zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>> p[], std::size_t n)
+	auto fun = [](const char*, std::uint32_t u, std::span<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>> p)
 	{
 		std::cout << u << std::endl;
-		std::for_each_n(p, n, [](float f) { std::cout << f << std::endl; });
+		std::ranges::for_each(p, [](float f) { std::cout << f << std::endl; });
 	};
 	alignas(Ts...) std::byte buf[12]{};
 	std::memcpy(buf, "hello world", sizeof(buf));
@@ -168,7 +168,7 @@ int main()
 	if constexpr (::is_zero_cost_serialization) {
 		struct TestFun
 		{
-			void operator()(std::uint_least32_t, bool) {}
+			void operator()(std::uint_least32_t, char) {}
 		};
 		struct TestFunT
 		{
@@ -244,9 +244,9 @@ int main()
 	static_assert(zero_cost_serialization::flex_element_size_v<foobar, decltype(fun)> == 0);
 	assert(73 == zero_cost_serialization::apply<foobar>(fun, buf));
 
-	auto fun2 = [](std::uint32_t uu, zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>> p[], std::size_t n) {
+	auto fun2 = [](std::uint32_t uu, std::span<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>> p) {
 		std::cout << uu << std::endl;
-		std::for_each_n(p, n, [](float ff) { std::cout << ff << std::endl; });
+		std::ranges::for_each(p, [](float ff) { std::cout << ff << std::endl; });
 	}; //std::uint32_t and 0+ floats.
 	std::memcpy(buf, "flex array!", sizeof(buf));
 	static_assert(zero_cost_serialization::apply_size_v<foobar, decltype(fun2)> == 4);

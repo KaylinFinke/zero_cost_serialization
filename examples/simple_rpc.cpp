@@ -205,7 +205,7 @@ namespace client {
 		using message_type = server::hatch_dragon;
 		//changing the last type to a pointer the final member, less one extent, and adding a size_t
 		//shows that this handles a variable length message similar to C's flexible array member feature.
-		bool operator()(client::user_context*, const unit_id&, dragon_color, bool, char[], std::size_t) noexcept;
+		bool operator()(client::user_context*, const unit_id&, dragon_color, bool, std::span<char>) noexcept;
 	};
 	struct handle_attack_result
 	{
@@ -558,19 +558,19 @@ bool client::handle_attack_result::operator()(client::user_context* usr, const u
 }
 
 
-bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, bool, char name[], std::size_t len) noexcept
+bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, bool, std::span<char> name) noexcept
 {
 	//false results indicate a bug in our stack/server. we can't continue.
-	if (not len or std::span(name, len)[len - 1] or std::memchr(name, 0, len - 1) or len > sizeof(server::hatch_dragon::name)) std::terminate();
+	if (name.empty() or std::distance(std::ranges::find(name, '\0'), name.end()) not_eq 1 or name.size() > sizeof(server::hatch_dragon::name)) std::terminate();
 	if (color >= dragon_color::last) std::terminate();
 
-	printf("knight %d has spotted a fearsome %s dragon named %s!\n", usr->id, std::span(color_name)[std::size_t(color)], name);
+	printf("knight %d has spotted a fearsome %s dragon named %s!\n", usr->id, std::span(color_name)[std::size_t(color)], name.data());
 
 	//note: our knights are dumb and ignore if the dragon can fly.
 	usr->has_dragon = true;
 	usr->active_dragon.id = id;
 	usr->active_dragon.color = color;
-	usr->active_dragon.name = name;
+	usr->active_dragon.name = name.data();
 
 	return true;
 }
