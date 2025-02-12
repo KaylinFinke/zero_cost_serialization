@@ -149,12 +149,18 @@ namespace zero_cost_serialization {
 	template <detail::reflectable_scalar S, typename Traits>
 	struct is_serializable_type<S, Traits> { constexpr auto operator()(bool& result, std::size_t& offset, std::size_t& align) noexcept
 	{
-		if constexpr (not Traits:: template is_representation_compatible<S>()) result = false;
-		else if constexpr (std::popcount(Traits:: template minimum_alignment<S>()) != 1) result = false;
-		else if constexpr (sizeof(S) % alignof(S)) result = false;
-		else if constexpr (sizeof(S) % Traits:: template minimum_alignment<S>()) result = false;
-		else if (offset % alignof(S)) result = false;
-		else if (offset % Traits:: template minimum_alignment<S>()) result = false;
+		if constexpr (not Traits:: template is_representation_compatible<S>())
+			result = false;
+		else if constexpr (std::popcount(Traits:: template minimum_alignment<S>()) != 1)
+			result = false;
+		else if constexpr (sizeof(S) % alignof(S))
+			result = false;
+		else if constexpr (sizeof(S) % Traits:: template minimum_alignment<S>())
+			result = false;
+		else if (offset % alignof(S))
+			result = false;
+		else if (offset % Traits:: template minimum_alignment<S>())
+			result = false;
 		else {
 			offset += sizeof(S);
 			align = std::max({align, Traits:: template minimum_alignment<S>(), alignof(S)});
@@ -176,10 +182,14 @@ namespace zero_cost_serialization {
 		auto arr_align = std::size_t{ 1 };
 		using E = std::remove_all_extents_t<A>;
 		is_serializable_type<E, Traits>{}(result, arr_off, arr_align);
-		if (arr_off not_eq sizeof(E)) result = false;
-		else if (arr_off % arr_align) result = false;
-		else if (offset % arr_align) result = false;
-		else if (offset % alignof(A)) result = false;
+		if (arr_off not_eq sizeof(E))
+			result = false;
+		else if (arr_off % arr_align)
+			result = false;
+		else if (offset % arr_align)
+			result = false;
+		else if (offset % alignof(A))
+			result = false;
 		else {
 			offset += sizeof(A);
 			align = std::max({ align, arr_align, alignof(A) });
@@ -192,10 +202,14 @@ namespace zero_cost_serialization {
 		auto class_off = std::size_t{};
 		auto class_align = std::size_t{ 1 };
 		detail::is_serializable_member<C, Traits>(std::make_index_sequence<detail::field_count<C>()>(), result, class_off, class_align);
-		if (class_off not_eq sizeof(C)) result = false;
-		else if (class_off % class_align) result = false;
-		else if (offset % class_align) result = false;
-		else if (offset % alignof(C)) result = false;
+		if (class_off not_eq sizeof(C))
+			result = false;
+		else if (class_off % class_align)
+			result = false;
+		else if (offset % class_align)
+			result = false;
+		else if (offset % alignof(C))
+			result = false;
 		else {
 			offset += sizeof(C);
 			align = std::max({ align, class_align, alignof(C) });

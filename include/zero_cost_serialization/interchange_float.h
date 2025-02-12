@@ -27,7 +27,7 @@ namespace zero_cost_serialization {
 			constexpr auto m_mask = T{ i_bit - 1 };
 			constexpr auto m_max = i_bit | m_mask;
 
-			if (auto exceeds_m = std::bit_width(static_cast<std::make_unsigned_t<T>>(t)) - M; exceeds_m > 0) [[unlikely]] {
+			if (auto exceeds_m = std::bit_width(static_cast<std::make_unsigned_t<T>>(t)) - M; exceeds_m > 0) {
 				auto odd_bit = T{ 1 } << exceeds_m;
 				auto half = odd_bit >> 1;
 				auto is_odd = bool(odd_bit & t);
@@ -138,7 +138,7 @@ namespace zero_cost_serialization {
 			if (std::isfinite(f)) {
 				auto e = int{};
 				t = T(std::abs(std::rint(std::ldexp(std::frexp(f, &e), M))));
-				
+
 				detail::round_to_even<M>(t, e);
 
 				if (e > e_max)

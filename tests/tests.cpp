@@ -159,7 +159,7 @@ auto test() noexcept
 		std::ranges::for_each(p, [](float f) { std::cout << f << std::endl; });
 	};
 	alignas(Ts...) std::byte buf[12]{};
-	std::memcpy(buf, "hello world", sizeof(buf));
+	std::ranges::copy(std::as_bytes(std::span("hello world")), buf);
 	return zero_cost_serialization::invoke<Ts...>(fun, std::forward_as_tuple("hello"), buf);
 }
 
@@ -239,7 +239,7 @@ int main()
 		std::ranges::for_each(a, [](float ff) { std::cout << ff << std::endl; });
 		return 73;
 	}; //std::uint32_t and exactly 2 floats.
-	std::memcpy(buf, "hello world", sizeof(buf));
+	std::ranges::copy(std::as_bytes(std::span("hello world")), buf);
 	static_assert(zero_cost_serialization::apply_size_v<foobar, decltype(fun)> == 12);
 	static_assert(zero_cost_serialization::flex_element_size_v<foobar, decltype(fun)> == 0);
 	assert(73 == zero_cost_serialization::apply<foobar>(fun, buf));
@@ -248,7 +248,7 @@ int main()
 		std::cout << uu << std::endl;
 		std::ranges::for_each(p, [](float ff) { std::cout << ff << std::endl; });
 	}; //std::uint32_t and 0+ floats.
-	std::memcpy(buf, "flex array!", sizeof(buf));
+	std::ranges::copy(std::as_bytes(std::span("flex array!")), buf);
 	static_assert(zero_cost_serialization::apply_size_v<foobar, decltype(fun2)> == 4);
 	static_assert(zero_cost_serialization::flex_element_size_v<foobar, decltype(fun2)> == 4);
 	zero_cost_serialization::apply<foobar>(fun2, buf);

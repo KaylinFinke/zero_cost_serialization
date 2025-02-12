@@ -28,12 +28,11 @@ namespace zero_cost_serialization {
 		requires (is_unpack_invocable_v<F, T, Args> and not is_unpack_invocable_flex_v<F, T, Args>)
 		[[nodiscard]] consteval auto apply_size() noexcept
 		{
-			if constexpr (empty_class<T>) {
-				return invoke_size_pack<std::tuple<>>(std::make_index_sequence<0>());
-			} else {
+			if constexpr (not empty_class<T>) {
 				using TT = tuple_of_refs<T>;
 				return invoke_size_pack<TT>(std::make_index_sequence<std::tuple_size_v<TT>>());
-			}
+			} else
+				return invoke_size_pack<std::tuple<>>(std::make_index_sequence<0>());
 		}
 		template <typename T, typename F, typename Args>
 		requires is_unpack_invocable_flex_v<F, T, Args>
@@ -49,8 +48,8 @@ namespace zero_cost_serialization {
 			if constexpr (is_unpack_invocable_flex_v<F, T, Args>) {
 				using TT = tuple_of_refs_flex<T>;
 				return sizeof(std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<std::tuple_size_v<TT> -1, TT>>>);
-			}
-			return std::size_t{};
+			} else
+				return std::size_t{};
 		}
 	}
 

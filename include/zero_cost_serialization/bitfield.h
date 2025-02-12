@@ -182,8 +182,10 @@ namespace zero_cost_serialization {
 		template <std::size_t N>
 		[[nodiscard]] static consteval auto offset() noexcept
 		{
-			if constexpr (not N) return common_type{};
-			else return offset(std::make_index_sequence<N>());
+			if constexpr (not N)
+				return common_type{};
+			else
+				return offset(std::make_index_sequence<N>());
 		}
 
 		template <std::size_t N>
@@ -210,7 +212,8 @@ namespace zero_cost_serialization {
 			auto unique = true;
 			auto i = sizeof...(Ts);
 			(find_index<T, Is>(i, unique), ...);
-			if (not unique) i = sizeof...(Ts);
+			if (not unique)
+				i = sizeof...(Ts);
 			return i;
 		}
 
@@ -441,8 +444,10 @@ namespace zero_cost_serialization {
 		requires (N < sizeof...(Ts))
 		constexpr auto set_value(const runtime_type<N>& value) noexcept
 		{
-			if constexpr (std::is_floating_point_v<runtime_type<N>>) set_integral<N>(zero_cost_serialization::from_float<int_type<N>, m_bits<N>, e_bits<N>>(value));
-			else set_integral<N>(value);
+			if constexpr (std::is_floating_point_v<runtime_type<N>>)
+				set_integral<N>(zero_cost_serialization::from_float<int_type<N>, m_bits<N>, e_bits<N>>(value));
+			else
+				set_integral<N>(value);
 		}
 
 		template <typename T>
@@ -456,8 +461,10 @@ namespace zero_cost_serialization {
 		requires (N < sizeof...(Ts))
 		[[nodiscard]] constexpr auto get_value() const noexcept
 		{
-			if constexpr (std::is_floating_point_v<runtime_type<N>>) return zero_cost_serialization::to_float<runtime_type<N>, m_bits<N>, e_bits<N>>(get_integral<N>());
-			else return get_integral<N>();
+			if constexpr (std::is_floating_point_v<runtime_type<N>>)
+				return zero_cost_serialization::to_float<runtime_type<N>, m_bits<N>, e_bits<N>>(get_integral<N>());
+			else
+				return get_integral<N>();
 		}
 
 		template <typename T>
@@ -553,8 +560,10 @@ namespace zero_cost_serialization {
 		template <typename T, std::size_t N>
 		[[nodiscard]] static constexpr auto contained_in_idx(const std::size_t byte) noexcept
 		{
-			if constexpr (not std::has_unique_object_representations_v<T> or std::endian::native not_eq std::endian::little) return false;
-			if (byte > bytes or bytes - byte < sizeof(T)) return false;
+			if constexpr (not std::has_unique_object_representations_v<T> or std::endian::native not_eq std::endian::little)
+				return false;
+			if (byte > bytes or bytes - byte < sizeof(T))
+				return false;
 			auto first_t = byte * std::numeric_limits<unsigned char>::digits;
 			auto last_t = first_t + std::numeric_limits<T>::digits;
 			return first_t <= offset<N>() and last_t >= offset<N>() + size<N>();
@@ -567,11 +576,14 @@ namespace zero_cost_serialization {
 			constexpr auto first = std::find_if(detail::integer_iterator{}, detail::integer_iterator{ byte_offset }, contained_in_idx<T, N>);
 			constexpr auto last = std::partition_point(first, detail::integer_iterator{ bytes }, contained_in_idx<T, N>);
 			if constexpr (not contained_in_idx<T, N>(*first)) return bytes;
-			else if constexpr (not aligned) return *first;
+			else if constexpr (not aligned)
+				return *first;
 			else {
 				static_assert(first not_eq last);
-				if constexpr (constexpr auto it = std::find_if(first, last, [](const auto i) { return not (i % alignof(T)); }); contained_in_idx<T, N>(*it)) return *it;
-				else return bytes;
+				if constexpr (constexpr auto it = std::find_if(first, last, [](const auto i) { return not (i % alignof(T)); }); contained_in_idx<T, N>(*it))
+					return *it;
+				else
+					return bytes;
 			}
 		}
 
@@ -590,8 +602,10 @@ namespace zero_cost_serialization {
 		template <std::size_t N>
 		[[nodiscard]] static consteval auto native_offset() noexcept
 		{
-			if constexpr (constexpr auto off = native_offset<N, native_type<N>, true>(); off not_eq bytes) return off;
-			else return native_offset<N, native_type<N>, false>();
+			if constexpr (constexpr auto off = native_offset<N, native_type<N>, true>(); off not_eq bytes) 
+				return off;
+			else 
+				return native_offset<N, native_type<N>, false>();
 		}
 
 		template <typename T, std::size_t N>
@@ -599,7 +613,7 @@ namespace zero_cost_serialization {
 		{
 			alignas(T) std::array<std::byte, sizeof(T)> v;
 			static_assert(std::has_unique_object_representations_v<decltype(v)>);
-			std::ranges::copy(std::span(s). template subspan<N, sizeof(T)>(), v.data());
+			std::ranges::copy(std::span(s). template subspan<N, sizeof(T)>(), v.begin());
 			return std::bit_cast<T>(v);
 		}
 
@@ -609,7 +623,7 @@ namespace zero_cost_serialization {
 			alignas(T) std::array<std::byte, sizeof(T)> v;
 			static_assert(std::has_unique_object_representations_v<decltype(v)>);
 			v = std::bit_cast<decltype(v)>(t);
-			std::ranges::copy(v, std::span(s). template subspan<N, sizeof(T)>().data());
+			std::ranges::copy(v, std::span(s). template subspan<N, sizeof(T)>().begin());
 		}
 	};
 	namespace detail {
@@ -639,8 +653,10 @@ namespace zero_cost_serialization {
 	struct is_serializable_type<B, Traits> {
 		constexpr auto operator()(bool& result, std::size_t& offset, std::size_t& align) noexcept
 		{
-			if constexpr (not std::has_unique_object_representations_v<B>) result = false;
-			else if (offset % alignof(B)) result = false;
+			if constexpr (not std::has_unique_object_representations_v<B>)
+				result = false;
+			else if (offset % alignof(B))
+				result = false;
 			else {
 				offset += sizeof(B);
 				align = std::max(align, alignof(B));

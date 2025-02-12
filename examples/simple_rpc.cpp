@@ -1,9 +1,10 @@
 #include "zero_cost_serialization/apply.h"
 #include "zero_cost_serialization/bitfield.h"
-#include <cstring>
+#include <format>
 #include <random>
 #include <span>
 #include <string>
+#include <iostream>
 
 // Our system only cares that we're operating on a platform with 8 bit characters.
 // Networking without this is perfectly possible, but the APIs would be foreign to us.
@@ -91,7 +92,8 @@ enum class dragon_color : u16 {
 	last,
 };
 
-constexpr const char* color_name[std::size_t(dragon_color::last)] = { "green", "blue", "white", "black", "red", "gold" };
+using namespace std::literals::string_view_literals;
+constexpr auto color_name = std::array{ "green"sv, "blue"sv, "white"sv, "black"sv, "red"sv, "gold"sv };
 
 enum class dragon_result : u32 {
 	no_dragon,
@@ -276,8 +278,8 @@ namespace {
 
 		if (sizeof(data) - size < sizeof(header) + sizeof(message)) return false;
 
-		std::memcpy(std::span(data).subspan(size, sizeof(header)).data(), reinterpret_cast<const std::byte*>(&header), sizeof(header));
-		std::memcpy(std::span(data).subspan(size + sizeof(header), sizeof(message)).data(), reinterpret_cast<const std::byte*>(&message), sizeof(message));
+		std::ranges::copy(std::as_bytes(std::span(&header, 1)), std::span(data).subspan(size, sizeof(header)).begin());
+		std::ranges::copy(std::as_bytes(std::span(&message, 1)), std::span(data).subspan(size + sizeof(header), sizeof(message)).begin());
 		size += sizeof(header) + sizeof(message);
 		return true;
 	}
@@ -295,8 +297,8 @@ namespace {
 
 		if (sizeof(data) - size < sizeof(header) + vsize) return false;
 
-		std::memcpy(std::span(data).subspan(size, sizeof(header)).data(), reinterpret_cast<const std::byte*>(&header), sizeof(header));
-		std::memcpy(std::span(data).subspan(size + sizeof(header), vsize).data(), reinterpret_cast<const std::byte*>(&message), vsize);
+		std::ranges::copy(std::as_bytes(std::span(&header, 1)), std::span(data).subspan(size, sizeof(header)).begin());
+		std::ranges::copy(std::as_bytes(std::span(&message, 1)).first(vsize), std::span(data).subspan(size + sizeof(header), sizeof(message)).begin());
 		size += vsize + sizeof(header);
 		return true;
 	}
@@ -408,10 +410,10 @@ namespace {
 			std::uniform_int_distribution<unsigned short> distribution(0, static_cast<unsigned short>(std::min(usrs[i].out_size, sizeof(svr_users[i].in) - svr_users[i].in_size)));
 			auto n = distribution(engine);
 			if (n)
-				std::memcpy(std::span(svr_users[i].in).subspan(svr_users[i].in_size, n).data(), usrs[i].out, n);
+				std::ranges::copy(std::span(usrs[i].out).first(n), std::span(svr_users[i].in).subspan(svr_users[i].in_size, n).begin());
 			usrs[i].out_size -= n;
 			if (usrs[i].out_size and n)
-				std::memmove(usrs[i].out, std::span(usrs[i].out).subspan(n, usrs[i].out_size).data(), usrs[i].out_size);
+				std::ranges::copy(std::span(usrs[i].out).subspan(n, usrs[i].out_size), usrs[i].out);
 
 			svr_users[i].in_size += n;
 		}
@@ -419,10 +421,10 @@ namespace {
 			std::uniform_int_distribution<unsigned short> distribution(0, static_cast<unsigned short>(std::min(sizeof(usrs[i].in) - usrs[i].in_size, svr_users[i].out_size)));
 			auto n = distribution(engine);
 			if (n)
-				std::memcpy(std::span(usrs[i].in).subspan(usrs[i].in_size, n).data(), svr_users[i].out, n);
+				std::ranges::copy(std::span(svr_users[i].out).first(n), std::span(usrs[i].in).subspan(usrs[i].in_size, n).begin());
 			svr_users[i].out_size -= n;
 			if (svr_users[i].out_size and n)
-				std::memmove(svr_users[i].out, std::span(svr_users[i].out).subspan(n, svr_users[i].out_size).data(), svr_users[i].out_size);
+				std::ranges::copy(std::span(svr_users[i].out).subspan(n, svr_users[i].out_size), svr_users[i].out);
 
 			usrs[i].in_size += n;
 		}
@@ -463,7 +465,7 @@ namespace {
 		for (auto n = std::size_t{}; (n = recv_message<server::handlers>(std::make_tuple(&svr, &usr), std::span(usr.in).first(usr.in_size).subspan(read))); read += n);
 
 		if (read != usr.in_size and read)
-			std::memmove(usr.in, std::span(usr.in).first(usr.in_size).subspan(read, usr.in_size - read).data(), usr.in_size - read);
+			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in);
 		usr.in_size -= read;
 	}
 
@@ -483,7 +485,7 @@ namespace {
 		for (auto n = std::size_t{}; (n = recv_message<client::handlers>(std::make_tuple(&usr), std::span(usr.in).first(usr.in_size).subspan(read))); read += n);
 
 		if (read != usr.in_size and read)
-			std::memmove(usr.in, std::span(usr.in).first(usr.in_size).subspan(read, usr.in_size - read).data(), usr.in_size - read);
+			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in);
 		usr.in_size -= read;
 	}
 
@@ -537,17 +539,17 @@ bool client::handle_attack_result::operator()(client::user_context* usr, const u
 
 	switch (result) {
 	case dragon_result::no_dragon:
-		printf("knight %d swung at a dragon but she was already slain!\n", usr->id);
+		std::cout << std::format("knight {} swung at a dragon but she was already slain!\n", usr->id);
 		break;
 	case dragon_result::miss:
-		printf("the dragon %s has dodged knight %d's attack!\n", usr->active_dragon.name.c_str(), usr->id);
+		std::cout << std::format("the dragon {} has dodged knight {}'s attack!\n", usr->active_dragon.name, usr->id);
 		break;
 	case dragon_result::wounded:
-		printf("knight %d has delivered a mighty blow to a dragon named %s!\n", usr->id, usr->active_dragon.name.c_str());
+		std::cout << std::format("knight {} has delivered a mighty blow to a dragon named {}!\n", usr->id, usr->active_dragon.name);
 		break;
 	case dragon_result::killed:
 		usr->has_dragon = false;
-		printf("knight %d has killed a dragon named %s!\n", usr->id, usr->active_dragon.name.c_str());
+		std::cout << std::format("knight {} has killed a dragon named {}!\n", usr->id, usr->active_dragon.name);
 		break;
 	case dragon_result::last:
 		//server sent us a bad value; don't know how to continue.
@@ -564,7 +566,7 @@ bool client::handle_hatch_dragon::operator()(client::user_context* usr, const un
 	if (name.empty() or std::distance(std::ranges::find(name, '\0'), name.end()) not_eq 1 or name.size() > sizeof(server::hatch_dragon::name)) std::terminate();
 	if (color >= dragon_color::last) std::terminate();
 
-	printf("knight %d has spotted a fearsome %s dragon named %s!\n", usr->id, std::span(color_name)[std::size_t(color)], name.data());
+	std::cout << std::format("knight {} has spotted a fearsome {} dragon named {}!\n", usr->id, color_name.at(std::size_t(color)), std::string_view(name.data()));
 
 	//note: our knights are dumb and ignore if the dragon can fly.
 	usr->has_dragon = true;
