@@ -79,7 +79,7 @@ namespace net {
 //net:: types are in this example. This is a type we'll use in our example protocol.
 static_assert(std::numeric_limits<unsigned char>::digits == 8);
 static_assert(zero_cost_serialization::is_serializable_v<u8>);
-struct unit_id { u8 guid[16]; auto operator<=>(const unit_id&) const = default; };
+struct unit_id { std::array<u8, 16> guid; auto operator<=>(const unit_id&) const = default; };
 
 //Some enumerations and their portably networkable variants. Take care to set an underlying type.
 enum class dragon_color : u16 {
@@ -142,7 +142,7 @@ namespace server {
 		//A net::dragon_color is exactly like a dragon_color but has a 1 byte alignment requirement.
 		net::dragon_color color;
 		net::flag can_fly;
-		char name[16];
+		std::array<char, 16> name;
 	};
 
 	struct attack_result
@@ -159,15 +159,15 @@ namespace server {
 	struct user_context {
 		bool told_dragon;
 		std::size_t in_size, out_size;
-		std::byte in[1024];
-		std::byte out[1024];
+		std::array<std::byte, 1024> in;
+		std::array<std::byte, 1024> out;
 	};
 
 	struct server_context {
 		bool has_dragon;
 		dragon active_dragon;
 		std::size_t user_size;
-		user_context users[5];
+		std::array<user_context, 5> users;
 	};
 }
 
@@ -177,8 +177,8 @@ namespace client {
 		int id;
 		dragon active_dragon;
 		std::size_t in_size, out_size;
-		std::byte in[1024];
-		std::byte out[1024];
+		std::array<std::byte, 1024> in;
+		std::array<std::byte, 1024> out;
 	};
 }
 
@@ -271,7 +271,7 @@ namespace {
 	template <typename H, typename Args, zero_cost_serialization::serializable T>
 	requires (is_message<H, T> and not is_variable_length_message<H, T, Args>
 	and alignof(net::header_fixed) == 1 and alignof(T) == 1 and zero_cost_serialization::serializable<net::header_fixed, T>)
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message) noexcept
 	{
 		net::header_fixed header{}; //always initialize net types. assignment may read the current value.
 		header = message_id_v<H, T>;
@@ -287,7 +287,7 @@ namespace {
 	template <typename H, typename Args, zero_cost_serialization::serializable T>
 	requires (is_message<H, T> and is_variable_length_message<H, T, Args>
 	and alignof(net::header_variable) == 1 and alignof(T) == 1 and zero_cost_serialization::serializable<net::header_variable, T>)
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message, std::size_t n) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message, std::size_t n) noexcept
 	{
 		net::header_variable header{};
 		header.id = message_id_v<H, T>;
@@ -374,24 +374,24 @@ namespace {
 //handler table to deduce message ids and handler signatures.
 namespace server {
 	template <zero_cost_serialization::serializable T>
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message) noexcept
 	{
 		return ::send_message<client::handlers, client::context>(data, size, message);
 	}
 	template <zero_cost_serialization::serializable T>
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message, std::size_t n) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message, std::size_t n) noexcept
 	{
 		return ::send_message<client::handlers, client::context>(data, size, message, n);
 	}
 }
 namespace client {
 	template <zero_cost_serialization::serializable T>
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message) noexcept
 	{
 		return ::send_message<server::handlers, server::context>(data, size, message);
 	}
 	template <zero_cost_serialization::serializable T>
-	auto send_message(std::byte (&data)[1024], std::size_t& size, const T& message, std::size_t n) noexcept
+	auto send_message(std::array<std::byte, 1024>& data, std::size_t& size, const T& message, std::size_t n) noexcept
 	{
 		return ::send_message<server::handlers, server::context>(data, size, message, n);
 	}
@@ -413,7 +413,7 @@ namespace {
 				std::ranges::copy(std::span(usrs[i].out).first(n), std::span(svr_users[i].in).subspan(svr_users[i].in_size, n).begin());
 			usrs[i].out_size -= n;
 			if (usrs[i].out_size and n)
-				std::ranges::copy(std::span(usrs[i].out).subspan(n, usrs[i].out_size), usrs[i].out);
+				std::ranges::copy(std::span(usrs[i].out).subspan(n, usrs[i].out_size), usrs[i].out.begin());
 
 			svr_users[i].in_size += n;
 		}
@@ -424,7 +424,7 @@ namespace {
 				std::ranges::copy(std::span(svr_users[i].out).first(n), std::span(usrs[i].in).subspan(usrs[i].in_size, n).begin());
 			svr_users[i].out_size -= n;
 			if (svr_users[i].out_size and n)
-				std::ranges::copy(std::span(svr_users[i].out).subspan(n, svr_users[i].out_size), svr_users[i].out);
+				std::ranges::copy(std::span(svr_users[i].out).subspan(n, svr_users[i].out_size), svr_users[i].out.begin());
 
 			usrs[i].in_size += n;
 		}
@@ -441,10 +441,11 @@ namespace {
 		svr.active_dragon.color = dragon_color(std::uniform_int_distribution<int>(0, 5)(engine));
 		svr.active_dragon.health = svr.active_dragon.max_health = u8(std::uniform_int_distribution<int>(10, 25)(engine));
 		svr.has_dragon = true;
-		static constexpr const char* names[7] = { "Susan", "Geoff", "Princess", "Dragonette", "Carl", "Muffin", "Whiskers" };
-		svr.active_dragon.name = std::span(names)[std::size_t(std::uniform_int_distribution<int>(0, 6)(engine))];
+		using namespace std::literals::string_view_literals;
+		static constexpr auto names = std::array{ "Susan"sv, "Geoff"sv, "Princess"sv, "Dragonette"sv, "Carl"sv, "Muffin"sv, "Whiskers"sv };
+		svr.active_dragon.name = names.at(std::size_t(std::uniform_int_distribution<int>(0, 6)(engine)));
 		svr.active_dragon.can_fly = bool(std::uniform_int_distribution<int>(0, 1)(engine));
-		std::for_each_n(svr.users, svr.user_size, [&](auto& usr) { usr.told_dragon = false; });
+		std::ranges::for_each(std::span(svr.users).first(svr.user_size), [&](auto& usr) { usr.told_dragon = false; });
 	}
 
 	auto try_tell_current_dragon(server::server_context& svr, server::user_context& usr)
@@ -455,7 +456,7 @@ namespace {
 		message.id = svr.active_dragon.id;
 		message.color = svr.active_dragon.color;
 		message.can_fly = svr.active_dragon.can_fly;
-		std::copy_n(svr.active_dragon.name.c_str(), svr.active_dragon.name.size(), message.name);
+		std::ranges::copy(svr.active_dragon.name, message.name.begin());
 		usr.told_dragon = server::send_message(usr.out, usr.out_size, message, svr.active_dragon.name.size() + 1);
 	}
 
@@ -465,7 +466,7 @@ namespace {
 		for (auto n = std::size_t{}; (n = recv_message<server::handlers>(std::make_tuple(&svr, &usr), std::span(usr.in).first(usr.in_size).subspan(read))); read += n);
 
 		if (read != usr.in_size and read)
-			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in);
+			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in.begin());
 		usr.in_size -= read;
 	}
 
@@ -473,7 +474,7 @@ namespace {
 	{
 		try_build_new_dragon(svr);
 
-		std::for_each_n(svr.users, svr.user_size, [&](auto& usr) {
+		std::ranges::for_each(std::span(svr.users).first(svr.user_size), [&](auto& usr) {
 			try_handle_network(svr, usr);
 			try_tell_current_dragon(svr, usr);
 			});
@@ -485,7 +486,7 @@ namespace {
 		for (auto n = std::size_t{}; (n = recv_message<client::handlers>(std::make_tuple(&usr), std::span(usr.in).first(usr.in_size).subspan(read))); read += n);
 
 		if (read != usr.in_size and read)
-			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in);
+			std::ranges::copy(std::span(usr.in).first(usr.in_size).subspan(read), usr.in.begin());
 		usr.in_size -= read;
 	}
 
@@ -581,7 +582,7 @@ bool client::handle_hatch_dragon::operator()(client::user_context* usr, const un
 int main()
 {
 	server::server_context svr{};
-	client::user_context usr[5]{};
+	std::array<client::user_context, 5> usr{};
 
 	//add some clients.
 	svr.user_size = 5;
@@ -589,7 +590,7 @@ int main()
 		u.id = i++;
 
 	for (auto turn = std::size_t{}; turn < 50; ++turn) {
-		for (auto i = std::size_t{}; i < std::extent_v<decltype(usr)>; ++i)
+		for (auto i = std::size_t{}; i not_eq std::tuple_size_v<decltype(usr)>; ++i)
 			fake_tcp_networking(svr, usr, i);
 		for (auto& u : usr)
 			client_loop(u);

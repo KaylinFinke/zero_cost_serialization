@@ -144,6 +144,39 @@ namespace zero_cost_serialization {
 		{
 			(is_serializable_member<C, Traits, Is>(result, offset, align), ...);
 		}
+
+		template <typename T>
+		struct is_std_array : std::false_type {};
+
+		template <typename T, std::size_t Sz>
+		struct is_std_array<const std::array<T, Sz>> : std::true_type {};
+
+		template <typename T, std::size_t Sz>
+		struct is_std_array<volatile std::array<T, Sz>> : std::true_type {};
+
+		template <typename T, std::size_t Sz>
+		struct is_std_array<const volatile std::array<T, Sz>> : std::true_type {};
+
+		template <typename T, std::size_t Sz>
+		struct is_std_array<std::array<T, Sz>> : std::true_type {};
+
+		template <typename T>
+		inline constexpr auto is_std_array_v = detail::is_std_array<T>::value;
+
+		template <typename T, typename = void>
+		struct value_type_or_void
+		{
+			using type = void;
+		};
+
+		template <typename T>
+		struct value_type_or_void<T, std::void_t<typename T::value_type>>
+		{
+			using type = typename T::value_type;
+		};
+
+		template <typename T>
+		using value_type_or_void_type = typename detail::value_type_or_void<T>::type;
 	}
 
 	template <detail::reflectable_scalar S, typename Traits>
@@ -183,6 +216,30 @@ namespace zero_cost_serialization {
 		using E = std::remove_all_extents_t<A>;
 		is_serializable_type<E, Traits>{}(result, arr_off, arr_align);
 		if (arr_off not_eq sizeof(E))
+			result = false;
+		else if (arr_off % arr_align)
+			result = false;
+		else if (offset % arr_align)
+			result = false;
+		else if (offset % alignof(A))
+			result = false;
+		else {
+			offset += sizeof(A);
+			align = std::max({ align, arr_align, alignof(A) });
+		}
+	}};
+
+	template <typename A, typename Traits>
+	requires detail::is_std_array_v<A>
+	struct is_serializable_type<A, Traits> { constexpr auto operator()(bool& result, std::size_t& offset, std::size_t& align) noexcept
+	{
+		auto arr_off = std::size_t{};
+		auto arr_align = std::size_t{ 1 };
+		using E = typename A::value_type;
+		is_serializable_type<E, Traits>{}(result, arr_off, arr_align);
+		if (not std::tuple_size_v<A>)
+			result = false;
+		else if (arr_off not_eq sizeof(E))
 			result = false;
 		else if (arr_off % arr_align)
 			result = false;
