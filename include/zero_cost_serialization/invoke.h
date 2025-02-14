@@ -120,7 +120,7 @@ namespace zero_cost_serialization {
 		[[nodiscard]] auto tuple_of_refs_flex_helper(const T&, const std::index_sequence<Is...>&) noexcept
 		{
 			using TT = std::tuple<std::conditional_t<Is + 1 == std::tuple_size_v<T>,
-				std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>[],
+				std::conditional_t<detail::is_std_array_v<std::remove_reference_t<std::tuple_element_t<Is, T>>>, detail::value_type_or_void_type<std::remove_reference_t<std::tuple_element_t<Is, T>>>, std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>>[],
 				std::tuple_element_t<Is, T>>...>;
 			return std::add_pointer_t<TT>{};
 		}
@@ -129,7 +129,7 @@ namespace zero_cost_serialization {
 		[[nodiscard]] auto tuple_of_refs_flex_span_helper(const T&, const std::index_sequence<Is...>&) noexcept
 		{
 			using TT = std::tuple<std::conditional_t<Is + 1 == std::tuple_size_v<T>,
-				std::span<std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>>,
+				std::span<std::conditional_t<detail::is_std_array_v<std::remove_reference_t<std::tuple_element_t<Is, T>>>, detail::value_type_or_void_type<std::remove_reference_t<std::tuple_element_t<Is, T>>>, std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>>>,
 				std::tuple_element_t<Is, T>>...>;
 			return std::add_pointer_t<TT>{};
 		}
