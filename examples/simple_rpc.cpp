@@ -307,7 +307,7 @@ namespace {
 	[[nodiscard]] auto recv_header(const std::span<std::byte>& data)
 	{
 		if (data.size() < sizeof(T)) return static_cast<T*>(nullptr);
-		return zero_cost_serialization::reinterpret_memory<T>(data.first(sizeof(T)).data(), sizeof(T));
+		return zero_cost_serialization::reinterpret_memory<T>(data.first(sizeof(T)));
 	}
 
 	template <typename Hdr, typename T, typename F, typename Args>
