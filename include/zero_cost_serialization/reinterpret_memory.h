@@ -5,27 +5,34 @@
 #include <cstring>
 #include <new>
 #include <type_traits>
+#include "zero_cost_serialization/detail/warning.h"
 
 namespace zero_cost_serialization {
 	template <typename T, typename U>
 	requires std::conjunction_v<std::is_trivially_copyable<T>, std::is_trivially_copyable<U>>
 	[[nodiscard]] auto reinterpret_memory(U& data) noexcept
 	{
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 		return reinterpret_cast<T*>(std::memmove(&data, &data, sizeof(data)));
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
 	}
 
 	template <typename T, typename U, std::size_t N>
 	requires std::conjunction_v<std::is_trivially_copyable<T>, std::is_trivially_copyable<U>>
 	[[nodiscard]] auto reinterpret_memory(U(&data)[N]) noexcept
 	{
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 		return reinterpret_cast<T*>(std::memmove(&data, &data, sizeof(data)));
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
 	}
 
 	template <typename T, typename U>
 	requires std::conjunction_v<std::is_trivially_copyable<T>, std::is_trivially_copyable<U>>
 	[[nodiscard]] auto reinterpret_memory(U* data, std::size_t size) noexcept
 	{
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 		return reinterpret_cast<T*>(std::memmove(data, data, size));
+		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
 	}
 }
 
