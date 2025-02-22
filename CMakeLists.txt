@@ -25,9 +25,21 @@ set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE
     ${ZERO_COST_SERIALIZATION_INCLUDE_DIR}/serializable.h
     )
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE} ${ZERO_COST_SERIALIZATION_ROOT_DIR}/clang/zero_cost_serialization/detail/warning.h)
+else()
+    set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE} ${ZERO_COST_SERIALIZATION_ROOT_DIR}/generic/zero_cost_serialization/detail/warning.h)
+endif()
+
 add_library(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE})
 target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_INCLUDE_DIR}/..)
 target_compile_features(zero_cost_serialization INTERFACE cxx_std_20)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_ROOT_DIR}/clang)
+else()
+    target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_ROOT_DIR}/generic)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wall
@@ -83,4 +95,9 @@ if(${ZERO_COST_SERIALIZATION_BUILD_EXAMPLES})
     add_executable(zero_cost_serialization_tests ${ZERO_COST_SERIALIZATION_TESTS_DIR}/tests.cpp)
     target_link_libraries(zero_cost_serialization_tests PUBLIC zero_cost_serialization)
     target_compile_features(zero_cost_serialization_tests PUBLIC cxx_std_20)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(zero_cost_serialization_tests PUBLIC -Wno-ignored-qualifiers)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(zero_cost_serialization_tests PUBLIC /wd5266)
+    endif()
 endif(${ZERO_COST_SERIALIZATION_BUILD_EXAMPLES})

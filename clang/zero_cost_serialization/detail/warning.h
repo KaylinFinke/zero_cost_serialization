@@ -1,0 +1,7 @@
+#ifndef ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
+#define ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN _Pragma("clang unsafe_buffer_usage begin")
+#endif
+
+#ifndef ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
+#define ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END _Pragma("clang unsafe_buffer_usage end")
+#endif

@@ -43,9 +43,11 @@ namespace zero_cost_serialization {
 			data = data.subspan(sz);
 			if constexpr (not std::is_unbounded_array_v<T>)
 				return zero_cost_serialization::reinterpret_memory<E>(p.data(), sizeof(E));
-			else if (count)
+			else if (count) {
+				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 				return std::span(zero_cost_serialization::reinterpret_memory<E>(p.data(), sz), count);
-			else 
+				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
+			} else 
 				return std::span<E>();
 		}
 
