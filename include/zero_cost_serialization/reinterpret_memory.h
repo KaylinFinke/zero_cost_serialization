@@ -5,6 +5,7 @@
 #include <cstring>
 #include <new>
 #include <type_traits>
+#include <span>
 #include "zero_cost_serialization/detail/warning.h"
 
 namespace zero_cost_serialization {
@@ -28,10 +29,10 @@ namespace zero_cost_serialization {
 
 	template <typename T, typename U>
 	requires std::conjunction_v<std::is_trivially_copyable<T>, std::is_trivially_copyable<U>>
-	[[nodiscard]] auto reinterpret_memory(U* data, std::size_t size) noexcept
+	[[nodiscard]] auto reinterpret_memory(std::span<U> data) noexcept
 	{
 		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
-		return reinterpret_cast<T*>(std::memmove(data, data, size));
+		return reinterpret_cast<T*>(std::memmove(data.data(), data.data(), data.size_bytes()));
 		ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
 	}
 }
