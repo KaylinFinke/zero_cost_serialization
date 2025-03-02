@@ -1,5 +1,6 @@
 #include "zero_cost_serialization/apply.h"
 #include "zero_cost_serialization/bitfield.h"
+#include "zero_cost_serialization/map.h"
 
 #include <algorithm>
 #include <cassert>
@@ -56,7 +57,7 @@ static_assert(sizeof(field0) == 1);
 
 static constexpr auto field1 = zero_cost_serialization::bitfield<std::integral_constant<signed, 7>>{ { {std::byte{0x7B} } } };
 static_assert(field1.get_value<0>() == -5); //signed fast path rank < int at 0.
-[[maybe_unused]] static int x = field1;
+[[maybe_unused]] static int unused_implicit_conversion = field1;
 static_assert(sizeof(field1) == 1);
 static constexpr auto field2 = zero_cost_serialization::bitfield<std::integral_constant<bool, 1>, std::integral_constant<signed, 7>>{ { { std::byte{0xF6} } } };
 static_assert(field2.get_value<1>() == -5); //signed fast path rank < int not at 0.
@@ -148,7 +149,6 @@ static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<c
 static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<const char&>(std::declval<const int&>())), const char&>);
 
 #include <iostream>
-#include <cstring>
 
 template <typename... Ts>
 auto test() noexcept
@@ -278,5 +278,67 @@ int main()
 		assert(((ifloat & 0x7FFF'FFFF) > 0x7F'FFFF) or ii == ifloat);
 		my_float = ffloat;
 		assert(((ifloat & 0x7FFF'FFFF) > 0x7F'FFFF) or zero_cost_serialization::from_binary32(ffloat) == zero_cost_serialization::from_binary32(float(my_float)));
+	}
+	{
+		struct node
+		{
+			zero_cost_serialization::map::color color;
+			zero_cost_serialization::map::link left;
+			zero_cost_serialization::map::link right;
+			zero_cost_serialization::map::link parent;
+			std::size_t value;
+		};
+		std::array<node, 1000> A{};
+		auto root = zero_cost_serialization::map::nil;
+		for (auto i = std::size_t{}; i not_eq std::size_t{ A.size() }; ++i) {
+			root = zero_cost_serialization::map::insert(A, root, i, &node::left, &node::right, &node::parent, &node::color, std::ranges::less{}, &node::value);
+			assert(zero_cost_serialization::map::validate(std::span(A).first(i + 1), root, &node::left, &node::right, &node::parent, &node::color, std::ranges::less{}, &node::value));
+		}
+		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
+			root = zero_cost_serialization::map::erase(A, root, i, &node::left, &node::right, &node::parent, &node::color);
+			assert(zero_cost_serialization::map::validate(std::span(A), root, &node::left, &node::right, &node::parent, &node::color, std::ranges::less{}, &node::value));
+		}
+	}
+
+	{
+		using node = zero_cost_serialization::bitfield <
+			std::integral_constant < zero_cost_serialization::map::color, zero_cost_serialization::map::color{ 1 } > ,
+			std::integral_constant < zero_cost_serialization::map::link, zero_cost_serialization::map::link{ 21 } > ,
+			std::integral_constant < zero_cost_serialization::map::link, zero_cost_serialization::map::link{ 21 } > ,
+			std::integral_constant < zero_cost_serialization::map::link, zero_cost_serialization::map::link{ 21 } > ,
+			std::integral_constant <std::size_t, 32 >> ;
+		auto left = [](node& t) { return t.get<1>(); };
+		auto right = [](node& t) { return t.get<2>(); };
+		auto parent = [](node& t) { return t.get<3>(); };
+		auto color = [](node& t) { return t.get<0>(); };
+		auto key = [](node& t) { return t.get<4>(); };
+		std::array<node, 1000> A{};
+		auto root = zero_cost_serialization::map::nil;
+		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
+			root = zero_cost_serialization::map::insert(A, root, i, left, right, parent, color, std::ranges::less{}, key);
+			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
+		}
+		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
+			root = zero_cost_serialization::map::erase(A, root, i, left, right, parent, color);
+			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
+		}
+	}
+	{
+		using node = std::tuple<zero_cost_serialization::map::color, zero_cost_serialization::map::link, zero_cost_serialization::map::link, zero_cost_serialization::map::link, std::size_t>;
+		auto left = [](node& t) -> decltype(auto) { return std::get<1>(t); };
+		auto right = [](node& t) -> decltype(auto) { return std::get<2>(t); };
+		auto parent = [](node& t) -> decltype(auto) { return std::get<3>(t); };
+		auto color = [](node& t) -> decltype(auto) { return std::get<0>(t); };
+		auto key = [](node& t) -> decltype(auto) { return std::get<4>(t); };
+		std::array<node, 1000> A{};
+		auto root = zero_cost_serialization::map::nil;
+		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
+			root = zero_cost_serialization::map::insert(A, root, i, left, right, parent, color, std::ranges::less{}, key);
+			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
+		}
+		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
+			root = zero_cost_serialization::map::erase(A, root, i, left, right, parent, color);
+			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
+		}
 	}
 }
