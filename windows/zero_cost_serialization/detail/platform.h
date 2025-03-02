@@ -1,0 +1,3 @@
+#ifndef ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS
+#define ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#endif

@@ -349,7 +349,7 @@ namespace zero_cost_serialization {
 
 				constexpr auto mask = []() consteval {
 					auto m = std::numeric_limits<unsigned_type>::max();
-					m >>= std::numeric_limits<unsigned_type>::digits - l_shift - size<N>();
+					m >>= std::numeric_limits<unsigned_type>::digits - size<N>();
 					m <<= l_shift;
 					return m;
 				}();
@@ -409,23 +409,18 @@ namespace zero_cost_serialization {
 			}
 		}
 
-		template <std::size_t N, typename B>
+		template <std::size_t N>
 		struct field_proxy
 		{
-			B* b;
+			bitfield* b;
 			using value_type = runtime_type<N>;
 			[[nodiscard]] constexpr operator value_type() const noexcept
 			{
-				return b-> template get_value<N>();
+				return b->get_value<N>();
 			}
-			constexpr decltype(auto) operator=(value_type value) noexcept
+			constexpr auto operator=(value_type value) noexcept
 			{
-				b-> template set_value<N>(value);
-				return *this;
-			}
-			constexpr decltype(auto) operator=(value_type value) const noexcept
-			{
-				b-> template set_value<N>(value);
+				b->set_value<N>(value);
 				return *this;
 			}
 		};
@@ -506,14 +501,14 @@ namespace zero_cost_serialization {
 		requires (N < sizeof...(Ts))
 		[[nodiscard]] constexpr auto get() & noexcept
 		{
-			return field_proxy<N, bitfield>{this};
+			return field_proxy<N>{this};
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
 		[[nodiscard]] constexpr auto get() & noexcept
 		{
-			return field_proxy<type_index<T>, bitfield>{this};
+			return field_proxy<type_index<T>>{this};
 		}
 
 		template <std::size_t N>
