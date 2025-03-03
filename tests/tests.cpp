@@ -289,7 +289,7 @@ int main()
 			std::size_t value;
 		};
 		std::array<node, 1000> A{};
-		auto root = zero_cost_serialization::map::nil;
+		auto root = zero_cost_serialization::map::link::nil;
 		for (auto i = std::size_t{}; i not_eq std::size_t{ A.size() }; ++i) {
 			root = zero_cost_serialization::map::insert(A, root, i, &node::left, &node::right, &node::parent, &node::color, std::ranges::less{}, &node::value);
 			assert(zero_cost_serialization::map::validate(std::span(A).first(i + 1), root, &node::left, &node::right, &node::parent, &node::color, std::ranges::less{}, &node::value));
@@ -313,7 +313,7 @@ int main()
 		auto color = [](node& t) { return t.get<0>(); };
 		auto key = [](node& t) { return t.get<4>(); };
 		std::array<node, 1000> A{};
-		auto root = zero_cost_serialization::map::nil;
+		auto root = zero_cost_serialization::map::link::nil;
 		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
 			root = zero_cost_serialization::map::insert(A, root, i, left, right, parent, color, std::ranges::less{}, key);
 			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
@@ -331,7 +331,7 @@ int main()
 		auto color = [](node& t) -> decltype(auto) { return std::get<0>(t); };
 		auto key = [](node& t) -> decltype(auto) { return std::get<4>(t); };
 		std::array<node, 1000> A{};
-		auto root = zero_cost_serialization::map::nil;
+		auto root = zero_cost_serialization::map::link::nil;
 		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
 			root = zero_cost_serialization::map::insert(A, root, i, left, right, parent, color, std::ranges::less{}, key);
 			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
