@@ -227,6 +227,57 @@ namespace zero_cost_serialization::map {
 			return root;
 		}
 
+		template <typename R, typename Left, typename Right, typename Parent, typename Color>
+		constexpr auto relink(R&& rng, detail::link root, detail::link z, detail::link y, Left left, Right right, Parent parent, Color color)
+		{
+			auto z_parent = detail::val<detail::link>(std::forward<R>(rng), z, parent);
+			auto z_left = detail::val<detail::link>(std::forward<R>(rng), z, left);
+			auto z_right = detail::val<detail::link>(std::forward<R>(rng), z, right);
+			auto z_is_left = detail::link::nil not_eq z_parent and detail::val<detail::link>(std::forward<R>(rng), z_parent, left) == z;
+
+			auto y_parent = detail::val<detail::link>(std::forward<R>(rng), z, parent);
+			auto y_left = detail::val<detail::link>(std::forward<R>(rng), z, left);
+			auto y_right = detail::val<detail::link>(std::forward<R>(rng), z, right);
+			auto y_is_left = detail::link::nil not_eq y_parent and detail::val<detail::link>(std::forward<R>(rng), y_parent, left) == z;
+
+			if (y_is_left)
+				detail::ref(std::forward<R>(rng), y_parent, left) = z;
+			else if (detail::link::nil not_eq y_parent)
+				detail::ref(std::forward<R>(rng), y_parent, right) = z;
+			if (detail::link::nil not_eq y_right)
+				detail::ref(std::forward<R>(rng), y_right, parent) = z;
+			if (detail::link::nil not_eq y_left)
+				detail::ref(std::forward<R>(rng), y_left, parent) = z;
+
+			if (z_is_left)
+				detail::ref(std::forward<R>(rng), z_parent, left) = y;
+			else if (detail::link::nil not_eq z_parent)
+				detail::ref(std::forward<R>(rng), z_parent, right) = y;
+			if (detail::link::nil not_eq z_right)
+				detail::ref(std::forward<R>(rng), z_right, parent) = y;
+			if (detail::link::nil not_eq z_left)
+				detail::ref(std::forward<R>(rng), z_left, parent) = y;
+
+			auto z_color = detail::val<detail::color>(std::forward<R>(rng), z, color);
+			detail::ref(std::forward<R>(rng), z, color) = detail::val<detail::color>(std::forward<R>(rng), y, color);
+			detail::ref(std::forward<R>(rng), y, color) = z_color;
+
+			detail::ref(std::forward<R>(rng), z, left) = y_left not_eq z ? y_left : y;
+			detail::ref(std::forward<R>(rng), z, right) = y_right not_eq z ? y_right : y;
+			detail::ref(std::forward<R>(rng), z, parent) = y_parent not_eq z ? y_parent : y;
+
+			detail::ref(std::forward<R>(rng), y, left) = z_left not_eq z ? z_left : y;
+			detail::ref(std::forward<R>(rng), y, right) = z_right not_eq z ? z_right : y;
+			detail::ref(std::forward<R>(rng), y, parent) = z_parent not_eq z ? z_parent : y;
+
+			if (z == root)
+				return y;
+			else if (y == root)
+				return z;
+			else
+				return root;
+		}
+
 		template <typename R, typename Left, typename Right, typename Parent, typename Color, typename Less = std::ranges::less, typename Key = std::identity>
 		constexpr auto insert(R&& rng, detail::link root, detail::link z, Left left, Right right, Parent parent, Color color, Less less = {}, Key key = {})
 		{
@@ -446,6 +497,24 @@ namespace zero_cost_serialization::map {
 			}
 		};
 
+		struct relink_fn
+		{
+			template <std::ranges::random_access_range R, detail::write_link_proj<R> Left, detail::write_link_proj<R> Right, detail::write_link_proj<R> Parent, detail::write_color_proj<R> Color>
+			constexpr auto operator()(R&& rng, detail::link root, std::ranges::range_size_t<R> z, std::ranges::range_size_t<R> y, Left left, Right right, Parent parent, Color color) const
+			{
+				return detail::relink(std::forward<R>(rng), root, detail::make_link(z), detail::make_link(y), left, right, parent, color);
+			}
+		};
+
+		struct transplant_fn
+		{
+			template <std::ranges::random_access_range R, detail::write_link_proj<R> Left, detail::write_link_proj<R> Right, detail::write_link_proj<R> Parent, detail::write_color_proj<R> Color>
+			constexpr auto operator()(R&& rng, detail::link root, std::ranges::range_size_t<R> z, std::ranges::range_size_t<R> y, Left left, Right right, Parent parent, Color color) const
+			{
+				return detail::transplant(std::forward<R>(rng), root, detail::make_link(z), detail::make_link(y), left, right, parent, color);
+			}
+		};
+
 		template <std::ranges::random_access_range R, detail::read_link_proj<R> Left, detail::read_link_proj<R> Right, detail::read_link_proj<R> Parent>
 		requires (std::semiregular<R> and std::semiregular<Left> and std::semiregular<Right> and std::semiregular<Parent> and std::ranges::view<R> and std::ranges::sized_range<R>)
 		struct forward_iter
@@ -518,6 +587,15 @@ namespace zero_cost_serialization::map {
 	[[maybe_unused]] inline constexpr auto validate = detail::validate_fn{};
 	[[maybe_unused]] inline constexpr auto insert = detail::insert_fn{};
 	[[maybe_unused]] inline constexpr auto erase = detail::erase_fn{};
+	// swap the in-tree nodes y and z such that y is at the position z was in the tree and vice versa.
+	// DANGEROUS. does NOT swap keys/values. use this for changing which indices reference which actual
+	// nodes e.g. to sort an underlying array. The user must swap the keys/values to maintain the tree.
+	[[maybe_unused]] inline constexpr auto relink = detail::relink_fn{};
+	// swap the in-tree node z with the out-of-tree node y.
+	// After this call z is not in the tree and y is where z was in the tree.
+	// DANGEROUS. does NOT swap keys/values. use this for changing which indices reference which actual
+	// nodes e.g. to compact a sparse array. The user must swap the keys/values to maintain the tree.
+	[[maybe_unused]] inline constexpr auto transplant = detail::transplant_fn{};
 	using detail::forward_iter;
 }
 
