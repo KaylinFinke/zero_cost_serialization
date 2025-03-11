@@ -4,6 +4,7 @@
 
 #include "zero_cost_serialization/serializable.h"
 #include "zero_cost_serialization/reinterpret_memory.h"
+#include "zero_cost_serialization/detail/error.h"
 
 #include <algorithm>
 #include <concepts>
@@ -43,12 +44,11 @@ namespace zero_cost_serialization {
 			data = data.subspan(sz);
 			if constexpr (not std::is_unbounded_array_v<T>)
 				return zero_cost_serialization::reinterpret_memory<E>(p.first(sizeof(E)));
-			else if (count) {
+			else {
 				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 				return std::span(zero_cost_serialization::reinterpret_memory<E>(p.first(sz)), count);
 				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
-			} else 
-				return std::span<E>();
+			}
 		}
 
 		template <typename T>
@@ -92,9 +92,16 @@ namespace zero_cost_serialization {
 		template <typename F, typename Args, typename... Ts, std::size_t... Is>
 		requires zero_cost_serialization::is_serializable_v<Ts...>
 		and ((not std::is_unbounded_array_v<std::tuple_element_t<Is, std::tuple<Ts...>>> or 1 + Is == sizeof...(Ts)) and ... and true)
-		[[nodiscard]] decltype(auto) invoke(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept_test_v<F, Args, Ts...>)
+		[[nodiscard]] decltype(auto) invoke(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept_test_v<F, Args, Ts...> and (not sizeof...(Ts) or not ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS))
 		{
 			if constexpr (sizeof...(Ts)) {
+				auto new_size = data.size();
+				auto new_data = static_cast<void*>(data.data());
+				if (auto ptr = std::align((std::max)({ alignof(Ts)... }), detail::required_size<Ts...>(), new_data, new_size); not ptr)
+					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently sized to construct the arguments for F.");
+				else if (new_size not_eq data.size())
+					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently aligned to construct the arguments for F.");
+
 				std::tuple < std::conditional_t < std::is_unbounded_array_v<Ts>, std::span<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>> ... > ptrs;
 
 				using Tuple = decltype(std::tuple_cat(std::forward<Args>(args), std::forward_as_tuple((repack_element<Ts>(std::get<Is>(ptrs)))...)));
@@ -225,15 +232,8 @@ namespace zero_cost_serialization {
 		requires zero_cost_serialization::is_serializable_v<Ts...>
 		[[nodiscard]] decltype(auto) invoke(auto&& f, auto&& args, std::span<std::byte> data) noexcept(noexcept(detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data)))
 		{
-			if (data.size() < required_size<Ts...>()) {
-				alignas(Ts...) std::array<std::byte, required_size<Ts...>()> temp;
-				std::ranges::copy(data, temp.begin());
-				std::ranges::fill(std::span(temp).subspan(sizeof(temp) - data.size()), std::byte{});
-				return detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), temp);
-			} else
-				return detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data);
+			return detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data);
 		}
-
 	}
 
 	template <typename... Ts>
