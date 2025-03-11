@@ -1,0 +1,30 @@
+#ifndef C6541F3737BA467EB8187681C8EE0218
+#define C6541F3737BA467EB8187681C8EE0218
+#ifdef C6541F3737BA467EB8187681C8EE0218
+
+#ifdef __cpp_exceptions
+#if __cpp_exceptions >= 199711L
+
+#ifndef ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE
+#include <stdexcept>
+#define ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE(what_arg) throw std::logic_error{what_arg}
+#endif
+
+#ifndef ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
+#define ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS true
+#endif
+
+#endif
+#endif
+
+#ifndef ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE
+#include <exception>
+#define ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE(what_arg) std::terminate()
+#endif
+
+#ifndef ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
+#define ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS false
+#endif
+
+#endif
+#endif

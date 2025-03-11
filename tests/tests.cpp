@@ -1,6 +1,7 @@
 #include "zero_cost_serialization/apply.h"
 #include "zero_cost_serialization/bitfield.h"
 #include "zero_cost_serialization/map.h"
+#include "zero_cost_serialization/list.h"
 
 #include <algorithm>
 #include <cassert>
