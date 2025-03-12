@@ -106,7 +106,7 @@ u4->x = 5; //okay.
 This requires the source and destination types be trivially copyable.
 
 # zero_cost_serialization::invoke
-This method unpacks an aligned buffer and calls the supplied object with the templated arguments. The pack of types must be serializable. It is on the user to ensure the buffer is at least as strictly aligned as the types in the pack (see below example for conformant use). Data is passed by reference to the callable object though the parameters need not be reference parameters. Allowable parameters are 0 or more fixed size parameters and an optional unbounded array at the end modeling a variable length array. If the unbounded array is specified, the last parameter to the functor shall be a std::span. If there is not enough data supplied to call the functor, the supplied data is copied to an aligned zeroed stack buffer which is used to call the functor. Returns the result of the functor.
+This method unpacks an aligned buffer and calls the supplied object with the templated arguments. The pack of types must be serializable. Data is passed by reference to the callable object though the parameters need not be reference parameters. Allowable parameters are 0 or more fixed size parameters and an optional unbounded array at the end modeling a variable length array. If the unbounded array is specified, the last parameter to the functor shall be a std::span. If there is not enough data supplied to call the functor, the supplied data is copied to an aligned zeroed stack buffer which is used to call the functor. Returns the result of the functor.
 
 ```
 template <typename... Ts>
