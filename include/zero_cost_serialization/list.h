@@ -61,6 +61,18 @@ namespace zero_cost_serialization::list {
 	}
 
 	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	auto push_front(R&& rng, list::link head, std::ranges::range_size_t<R> x, Next next, Prev prev)
+	{
+		return detail::push_front(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(x), next, prev);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	auto insert_after(R&& rng, list::link head, list::link pos, std::ranges::range_size_t<R> x, Next next, Prev prev)
+	{
+		return detail::insert_after(std::forward<R>(rng), head, pos, zero_cost_serialization::detail::make_link(x), next, prev);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
 	auto pop_front(R&& rng, list::link head, Next next, Prev prev)
 	{
 		auto x = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), head, next);
@@ -69,20 +81,20 @@ namespace zero_cost_serialization::list {
 		return x;
 	}
 
-	namespace detail {
-		template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
-		auto erase_after(R&& rng, list::link head, list::link pos, Next next, Prev prev)
-		{
-			if (list::link::nil not_eq pos) {
-				auto x = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), pos, next, next);
-				zero_cost_serialization::detail::ref(std::forward<R>(rng), pos, next) = x;
-				if (list::link::nil not_eq x)
-					zero_cost_serialization::detail::ref(std::forward<R>(rng), x, prev) = pos;
-				return head;
-			} else
-				return list::pop_front(std::forward<R>(rng), head, next, prev);
-		}
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	auto erase_after(R&& rng, list::link head, list::link pos, Next next, Prev prev)
+	{
+		if (list::link::nil not_eq pos) {
+			auto x = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), pos, next, next);
+			zero_cost_serialization::detail::ref(std::forward<R>(rng), pos, next) = x;
+			if (list::link::nil not_eq x)
+				zero_cost_serialization::detail::ref(std::forward<R>(rng), x, prev) = pos;
+			return head;
+		} else
+			return list::pop_front(std::forward<R>(rng), head, next, prev);
+	}
 
+	namespace detail {
 		template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
 		auto erase(R&& rng, list::link head, list::link pos, Next next, Prev prev)
 		{
@@ -164,23 +176,53 @@ namespace zero_cost_serialization::list {
 		}
 	}
 
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	auto erase(R&& rng, list::link head, std::ranges::range_size_t<R> pos, Next next, Prev prev)
+	{
+		return detail::erase(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(pos), next, prev);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	constexpr auto relink(R&& rng, list::link head, std::ranges::range_size_t<R> z, std::ranges::range_size_t<R> y, Next next, Prev prev)
+	{
+		return detail::relink(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(z), zero_cost_serialization::detail::make_link(y), next, prev);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next, zero_cost_serialization::detail::write_link_proj<R> Prev>
+	constexpr auto transplant(R&& rng, list::link head, std::ranges::range_size_t<R> z, std::ranges::range_size_t<R> y, Next next, Prev prev)
+	{
+		return detail::transplant(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(z), zero_cost_serialization::detail::make_link(y), next, prev);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
+	auto push_front(R&& rng, list::link head, std::ranges::range_size_t<R> x, Next next)
+	{
+		return detail::push_front(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(x), next);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
+	auto insert_after(R&& rng, list::link head, list::link pos, std::ranges::range_size_t<R> x, Next next)
+	{
+		return detail::insert_after(std::forward<R>(rng), head, pos, zero_cost_serialization::detail::make_link(x), next);
+	}
+
 	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
 	auto pop_front(R&& rng, list::link head, Next next)
 	{
 		return zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), head, next);
 	}
 
-	namespace detail {
-		template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
-		auto erase_after(R&& rng, list::link head, list::link pos, Next next)
-		{
-			if (list::link::nil not_eq pos) {
-				zero_cost_serialization::detail::ref(std::forward<R>(rng), pos, next) = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), pos, next, next);
-				return head;
-			} else
-				return list::pop_front(std::forward<R>(rng), head, next);
-		}
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
+	auto erase_after(R&& rng, list::link head, list::link pos, Next next)
+	{
+		if (list::link::nil not_eq pos) {
+			zero_cost_serialization::detail::ref(std::forward<R>(rng), pos, next) = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), pos, next, next);
+			return head;
+		} else
+			return list::pop_front(std::forward<R>(rng), head, next);
+	}
 
+	namespace detail {
 		template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
 		constexpr auto relink_after(R&& rng, list::link head, list::link z_prev, list::link y_prev, Next next)
 		{
@@ -217,6 +259,18 @@ namespace zero_cost_serialization::list {
 				return head;
 			}
 		}
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
+	constexpr auto relink_after(R&& rng, list::link head, std::ranges::range_size_t<R> z_prev, std::ranges::range_size_t<R> y_prev, Next next)
+	{
+		return detail::relink_after(std::forward<R>(rng), head, zero_cost_serialization::detail::make_link(z_prev), zero_cost_serialization::detail::make_link(y_prev), next);
+	}
+
+	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>
+	constexpr auto transplant_after(R&& rng, list::link head, list::link z_prev, std::ranges::range_size_t<R> y, Next next)
+	{
+		return detail::transplant_after(std::forward<R>(rng), head, z_prev, zero_cost_serialization::detail::make_link(y), next);
 	}
 
 	template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Next>

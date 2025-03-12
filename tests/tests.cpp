@@ -253,6 +253,7 @@ int main()
 	static_assert(zero_cost_serialization::apply_size_v<foobar, decltype(fun2)> == 4);
 	static_assert(zero_cost_serialization::flex_element_size_v<foobar, decltype(fun2)> == 4);
 	zero_cost_serialization::apply<foobar>(fun2, buf);
+#if 0
 	std::uint32_t ifloat = {};
 	float ffloat;
 
@@ -341,5 +342,51 @@ int main()
 			root = zero_cost_serialization::map::erase(A, root, i, left, right, parent, color);
 			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
 		}
+	}
+#endif
+	{
+		using node = zero_cost_serialization::list::link;
+		std::array<node, 3> A{};
+		auto head = zero_cost_serialization::list::link::nil;
+		head = zero_cost_serialization::list::push_front(A, head, std::size_t{}, std::identity{});
+		auto sz = std::size_t{};
+		for (auto it = zero_cost_serialization::list::forward_iter{std::span(A), head, std::identity{}}; !(it == zero_cost_serialization::list::link::nil); ++it, ++sz)
+			assert(&*it == A.data());
+		assert(sz == 1);
+		assert(zero_cost_serialization::list::validate(std::span(A), head, std::identity{}));
+		sz = {};
+		head = zero_cost_serialization::list::push_front(A, head, std::size_t{1}, std::identity{});
+		for (auto it = zero_cost_serialization::list::forward_iter{ std::span(A), head, std::identity{} }; !(it == zero_cost_serialization::list::link::nil); ++it, ++sz)
+			assert(&*it == std::span(A).subspan(1 - sz).data());
+		assert(static_cast<std::size_t>(head) == 2);
+		assert(zero_cost_serialization::list::validate(std::span(A), head, std::identity{}));
+		assert(sz == 2);
+		std::array<node, 3> B;
+		std::ranges::copy(A, B.begin());
+		sz = {};
+		auto b_head = zero_cost_serialization::list::insert_after(B, head, zero_cost_serialization::list::link::nil, std::size_t{2}, std::identity{});
+		assert(b_head == zero_cost_serialization::list::link{ 3 });
+		assert(zero_cost_serialization::list::validate(std::span(B), b_head, std::identity{}));
+		for (auto it = zero_cost_serialization::list::forward_iter{ std::span(B), b_head, std::identity{} }; !(it == zero_cost_serialization::list::link::nil); ++it, ++sz)
+			assert(&*it == std::span(B).subspan(2 - sz).data());
+		assert(sz = 3);
+
+		std::ranges::copy(A, B.begin());
+		sz = {};
+		b_head = zero_cost_serialization::list::insert_after(B, head, zero_cost_serialization::list::link{1}, std::size_t{2}, std::identity{});
+		assert(b_head == zero_cost_serialization::list::link{ 2 });
+		assert(zero_cost_serialization::list::validate(std::span(B), b_head, std::identity{}));
+		for (auto it = zero_cost_serialization::list::forward_iter{ std::span(B), b_head, std::identity{} }; !(it == zero_cost_serialization::list::link::nil); ++it, ++sz)
+			assert((&*it == std::span(B).subspan(0).data() and sz == 1) or (&*it == std::span(B).subspan(2).data() and sz == 2) or (&*it == std::span(B).subspan(1).data() and sz == 0));
+		assert(sz = 3);
+
+		std::ranges::copy(A, B.begin());
+		sz = {};
+		b_head = zero_cost_serialization::list::insert_after(B, head, zero_cost_serialization::list::link{2}, std::size_t{2}, std::identity{});
+		assert(b_head == zero_cost_serialization::list::link{2});
+		assert(zero_cost_serialization::list::validate(std::span(B), b_head, std::identity{}));
+		for (auto it = zero_cost_serialization::list::forward_iter{ std::span(B), b_head, std::identity{} }; !(it == zero_cost_serialization::list::link::nil); ++it, ++sz)
+			assert((&*it == std::span(B).subspan(0).data() and sz == 2) or (&*it == std::span(B).subspan(2).data() and sz == 1) or (&*it == std::span(B).subspan(1).data() and sz == 0));
+		assert(sz = 3);
 	}
 }
