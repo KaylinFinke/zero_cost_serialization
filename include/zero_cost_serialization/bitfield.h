@@ -620,6 +620,9 @@ namespace zero_cost_serialization {
 			v = std::bit_cast<decltype(v)>(t);
 			std::ranges::copy(v, std::span(s). template subspan<N, sizeof(T)>().begin());
 		}
+
+		template <typename, typename>
+		friend struct is_serializable_type;
 	};
 	namespace detail {
 		template <typename... Ts>
@@ -651,6 +654,8 @@ namespace zero_cost_serialization {
 			if constexpr (not std::has_unique_object_representations_v<B>)
 				result = false;
 			else if (offset % alignof(B))
+				result = false;
+			else if constexpr (B::bits % std::numeric_limits<unsigned char>::digits)
 				result = false;
 			else {
 				offset += sizeof(B);
