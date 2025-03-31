@@ -31,7 +31,7 @@ namespace zero_cost_serialization::detail {
 	};
 
 	template <typename Proj, typename R, typename T>
-	concept write_proj = requires(R && rng, Proj proj, detail::link r, T t)
+	concept write_proj = requires(R&& rng, Proj proj, detail::link r, T t)
 	{
 		{ std::invoke(proj, std::forward<R>(rng)[detail::index<R>(r)]) = t } -> std::same_as<std::invoke_result_t<Proj, decltype(std::declval<R>()[std::declval<std::ranges::range_size_t<R>>()])>>;
 		requires read_proj<Proj, R, T>;
@@ -83,6 +83,11 @@ namespace zero_cost_serialization::detail {
 	constexpr auto val(R&& rng, detail::link x, P... proj)
 	{
 		return detail::val_helper<T>(std::forward<R>(rng), x, std::index_sequence_for<P...>(), proj...);
+	}
+
+	constexpr auto index_for(detail::link x)
+	{
+		return std::size_t(std::size_t(x) - 1);
 	}
 }
 

@@ -103,13 +103,11 @@ enum class dragon_result : u32 {
 	last,
 };
 
-//Networkable versions of these types with minimal alignment requirement. 
-//Note how we picked dragon result to be a 2 bit bitfield. It's individually addressable so it takes up 
-//an entire byte, but it doesn't take up 4.
+//Networkable versions of these types with minimal alignment requirement.
 namespace net
 {
 	using dragon_color = zero_cost_serialization::bitfield < std::integral_constant < ::dragon_color, ::dragon_color{ 16 } >> ;
-	using dragon_result = zero_cost_serialization::bitfield < std::integral_constant < ::dragon_result, ::dragon_result{ 2 } >> ;
+	using dragon_result = zero_cost_serialization::bitfield < std::integral_constant < ::dragon_result, ::dragon_result{ 8 } >> ;
 }
 
 //Define server and client runtime representations of a dragon.
@@ -141,7 +139,7 @@ namespace server {
 		unit_id id;
 		//A net::dragon_color is exactly like a dragon_color but has a 1 byte alignment requirement.
 		net::dragon_color color;
-		net::flag can_fly;
+		net::u8 can_fly;
 		std::array<char, 16> name;
 	};
 
@@ -187,7 +185,7 @@ namespace client {
 	struct attack_dragon
 	{
 		unit_id id;
-		net::flag arrow_or_sword; //a net::flag aka bool is safe to copy even though bool isn't.
+		net::u8 arrow_or_sword;
 	};
 }
 
@@ -196,7 +194,7 @@ namespace server {
 	struct handle_attack_dragon
 	{
 		using message_type = client::attack_dragon;
-		bool operator()(server_context*, user_context*, const unit_id&, bool) noexcept;
+		bool operator()(server_context*, user_context*, const unit_id&, u8) noexcept;
 	};
 }
 
@@ -207,7 +205,7 @@ namespace client {
 		using message_type = server::hatch_dragon;
 		//changing the last type to a pointer the final member, less one extent, and adding a size_t
 		//shows that this handles a variable length message similar to C's flexible array member feature.
-		bool operator()(client::user_context*, const unit_id&, dragon_color, bool, std::span<char>) noexcept;
+		bool operator()(client::user_context*, const unit_id&, dragon_color, u8, std::span<char>) noexcept;
 	};
 	struct handle_attack_result
 	{
@@ -510,7 +508,7 @@ namespace {
 }
 
 
-bool server::handle_attack_dragon::operator()(server_context* svr, server::user_context* usr, const unit_id& id, bool arrow_or_sword) noexcept
+bool server::handle_attack_dragon::operator()(server_context* svr, server::user_context* usr, const unit_id& id, u8 arrow_or_sword) noexcept
 {
 	server::attack_result message{};
 	message.id = id;
@@ -561,7 +559,7 @@ bool client::handle_attack_result::operator()(client::user_context* usr, const u
 }
 
 
-bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, bool, std::span<char> name) noexcept
+bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, u8, std::span<char> name) noexcept
 {
 	//false results indicate a bug in our stack/server. we can't continue.
 	if (name.empty() or std::distance(std::ranges::find(name, '\0'), name.end()) not_eq 1 or name.size() > sizeof(server::hatch_dragon::name)) std::terminate();

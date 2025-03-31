@@ -90,7 +90,7 @@ static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::is_se
 static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::is_serializable_v<const i32>);
 static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::is_serializable_v<volatile i32>);
 static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::is_serializable_v<const volatile i32>);
-using B1 = B<I64<32>, U8<5>, I16<7>>;
+using B1 = B<I64<32>, U8<5>, I16<7>, U8<4>>;
 static_assert(zero_cost_serialization::is_serializable_v<B1>);
 struct T1 { B1 a; u16 b; };
 static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::is_serializable_v<T1>);

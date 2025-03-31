@@ -9,6 +9,7 @@
 namespace zero_cost_serialization::map {
 	using detail::color;
 	using detail::link;
+	using detail::index_for;
 	namespace detail {
 		template <std::ranges::random_access_range R, zero_cost_serialization::detail::write_link_proj<R> Left, zero_cost_serialization::detail::write_link_proj<R> Right, zero_cost_serialization::detail::write_link_proj<R> Parent>
 		constexpr auto left_rotate(R&& rng, map::link root, map::link x, Left left, Right right, Parent parent)
@@ -361,6 +362,9 @@ namespace zero_cost_serialization::map {
 
 	template<typename T, std::size_t Extent, typename Left, typename Right, typename Parent>
 	forward_iter(std::span<T, Extent> rng, map::link x, Left left, Right right, Parent parent) -> forward_iter<std::span<T, std::dynamic_extent>, Left, Right, Parent>;
+
+	template<typename T, typename Left, typename Right, typename Parent>
+	forward_iter(T rng, map::link x, Left left, Right right, Parent parent) -> forward_iter<T, Left, Right, Parent>;
 
 	template <std::ranges::random_access_range R, typename V, zero_cost_serialization::detail::read_link_proj<R> Left, zero_cost_serialization::detail::read_link_proj<R> Right, typename Less = std::ranges::less, typename Key = std::identity>
 	requires (std::indirect_strict_weak_order<Less, const V*, std::projected<std::ranges::iterator_t<R>, Key>> and std::copy_constructible<Less> and std::copy_constructible<Key>)

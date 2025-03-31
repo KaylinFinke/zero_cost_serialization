@@ -5,7 +5,8 @@
 #include "zero_cost_serialization/detail/platform.h"
 
 namespace zero_cost_serialization::list {
-	using zero_cost_serialization::detail::link;
+	using detail::link;
+	using detail::index_for;
 	namespace detail {
 		template <std::ranges::random_access_range R>
 		requires std::ranges::sized_range<R>
@@ -341,6 +342,9 @@ namespace zero_cost_serialization::list {
 
 	template<typename T, std::size_t Extent, typename Next>
 	forward_iter(std::span<T, Extent> rng, list::link x, Next next) -> forward_iter<std::span<T, std::dynamic_extent>, Next>;
+
+	template<typename T, typename Next>
+	forward_iter(T rng, list::link x, Next next) -> forward_iter<T, Next>;
 }
 namespace std
 {
