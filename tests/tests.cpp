@@ -2,6 +2,8 @@
 #include "zero_cost_serialization/bitfield.h"
 #include "zero_cost_serialization/map.h"
 #include "zero_cost_serialization/list.h"
+#include "zero_cost_serialization/nullable_resource.h"
+#include "zero_cost_serialization/scope_guard.h"
 
 #include <algorithm>
 #include <cassert>
@@ -11,6 +13,35 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
+
+template <typename type>
+concept boolean_testable = requires (type && t) {
+	requires std::convertible_to<type, bool>;
+{ not std::forward<type>(t) } -> std::convertible_to<bool>;
+};
+template <typename type>
+concept nullable_pointer_impl = requires(const type & cr, type & r, type && rv, const std::nullptr_t & np) {
+	requires std::default_initializable<type>;
+	requires std::copy_constructible<type>;
+	requires std::move_constructible<type>;
+	requires std::equality_comparable<type>;
+	requires std::destructible<type>;
+	requires std::swappable<type>;
+{ r = std::move(rv) } -> std::same_as<type&>;
+{ r = cr } -> std::same_as<type&>;
+{ type(nullptr) } -> std::same_as<type>;
+{ r = nullptr } -> std::same_as<type&>;
+{ cr == np } -> boolean_testable;
+{ np == cr } -> boolean_testable;
+{ cr != np } -> boolean_testable;
+{ np != cr } -> boolean_testable;
+};
+template <typename type>
+concept nullable_pointer = nullable_pointer_impl<::std::remove_cv_t<type>>;
+
+static_assert(nullable_pointer<void*>);
+static_assert(nullable_pointer<zero_cost_serialization::nullable_resource<int, 4>>);
+static_assert(nullable_pointer<zero_cost_serialization::nullable_resource<int>>);
 
 using i64 = std::int_least64_t;
 template <i64 N>
@@ -166,6 +197,125 @@ auto test() noexcept
 
 int main()
 {
+	[[maybe_unused]] auto test_nullable = std::hash<zero_cost_serialization::nullable_resource<int, 4>>{}(zero_cost_serialization::nullable_resource<int, 4>{});
+	[[maybe_unused]] auto test_hash = std::format(L"{}", zero_cost_serialization::nullable_resource<int, 4>{});
+
+	[[maybe_unused]] auto test_guide = zero_cost_serialization::nullable_resource{ 4 };
+	static_assert(std::same_as<decltype(test_guide), zero_cost_serialization::nullable_resource<int, 0>>);
+
+	int test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
+	}
+	assert(6 == test_scope_guard);
+	test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto dismiss = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
+		dismiss.release();
+		assert(7 == test_scope_guard);
+	}
+	assert(7 == test_scope_guard);
+	try {
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
+		throw 0;
+	}
+	catch (...) {
+		assert(6 == test_scope_guard);
+	}
+
+	test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_fail{ [&] { test_scope_guard = 6; } };
+	}
+	assert(7 == test_scope_guard);
+	test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto dismiss = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
+		dismiss.release();
+		assert(7 == test_scope_guard);
+	}
+	assert(7 == test_scope_guard);
+	try {
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
+		throw 0;
+	}
+	catch (...) {
+		assert(6 == test_scope_guard);
+	}
+
+	test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_success{ [&] { test_scope_guard = 6; } };
+	}
+	assert(6 == test_scope_guard);
+	test_scope_guard = 7;
+	{
+		assert(7 == test_scope_guard);
+		auto dismiss = zero_cost_serialization::scope_success{ [&] { test_scope_guard = 6; } };
+		dismiss.release();
+		assert(7 == test_scope_guard);
+	}
+	assert(7 == test_scope_guard);
+	try {
+		assert(7 == test_scope_guard);
+		auto _ = zero_cost_serialization::scope_success{ [&] { test_scope_guard = 6; } };
+		throw 0;
+	}
+	catch (...) {
+		assert(7 == test_scope_guard);
+	}
+
+	struct throws
+	{
+		[[noreturn]] throws()
+		{
+			throw 0;
+		}
+		[[noreturn]] throws(int)
+		{
+			throw 0;
+		}
+	};
+
+	struct throws_fn
+	{
+		throws_fn() = default;
+		[[noreturn]] throws_fn(throws_fn&&) { throw 0; }
+		[[noreturn]] throws_fn(const throws_fn&) { throw 0; }
+		void operator()(const throws&) const noexcept {}
+		void operator()(const int&) const noexcept {}
+	};
+
+	{
+		auto rs = zero_cost_serialization::unique_resource{ 0, [&](int) { test_scope_guard = 6; } };
+		assert(7 == test_scope_guard);
+	}
+	assert(6 == test_scope_guard);
+	test_scope_guard = 7;
+	try {
+		auto f = [&](const auto&) {test_scope_guard = 6; };
+		auto rs = zero_cost_serialization::unique_resource<throws, decltype(f)> {0, f};
+		assert(false);
+	}
+	catch (...) {
+		assert(6 == test_scope_guard);
+	}
+	test_scope_guard = 7;
+	try {
+		auto rs = zero_cost_serialization::unique_resource<int, throws_fn>{ 0, throws_fn{} };
+		assert(false);
+	}
+	catch (...) {
+		assert(7 == test_scope_guard);
+	}
+	
 	if constexpr (::is_zero_cost_serialization) {
 		struct TestFun
 		{
@@ -253,7 +403,7 @@ int main()
 	static_assert(zero_cost_serialization::apply_size_v<foobar, decltype(fun2)> == 4);
 	static_assert(zero_cost_serialization::flex_element_size_v<foobar, decltype(fun2)> == 4);
 	zero_cost_serialization::apply<foobar>(fun2, buf);
-#if 0
+
 	std::uint32_t ifloat = {};
 	float ffloat;
 
@@ -343,7 +493,7 @@ int main()
 			assert(zero_cost_serialization::map::validate(std::span(A), root, left, right, parent, color, std::ranges::less{}, key));
 		}
 	}
-#endif
+
 	{
 		using node = zero_cost_serialization::list::link;
 		std::array<node, 3> A{};
