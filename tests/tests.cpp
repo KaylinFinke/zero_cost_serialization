@@ -217,6 +217,7 @@ int main()
 		assert(7 == test_scope_guard);
 	}
 	assert(7 == test_scope_guard);
+#if ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
 	try {
 		assert(7 == test_scope_guard);
 		auto _ = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
@@ -225,7 +226,7 @@ int main()
 	catch (...) {
 		assert(6 == test_scope_guard);
 	}
-
+#endif
 	test_scope_guard = 7;
 	{
 		assert(7 == test_scope_guard);
@@ -240,6 +241,7 @@ int main()
 		assert(7 == test_scope_guard);
 	}
 	assert(7 == test_scope_guard);
+#if ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
 	try {
 		assert(7 == test_scope_guard);
 		auto _ = zero_cost_serialization::scope_exit{ [&] { test_scope_guard = 6; } };
@@ -248,7 +250,7 @@ int main()
 	catch (...) {
 		assert(6 == test_scope_guard);
 	}
-
+#endif
 	test_scope_guard = 7;
 	{
 		assert(7 == test_scope_guard);
@@ -263,6 +265,7 @@ int main()
 		assert(7 == test_scope_guard);
 	}
 	assert(7 == test_scope_guard);
+#if ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
 	try {
 		assert(7 == test_scope_guard);
 		auto _ = zero_cost_serialization::scope_success{ [&] { test_scope_guard = 6; } };
@@ -292,13 +295,14 @@ int main()
 		void operator()(const throws&) const noexcept {}
 		void operator()(const int&) const noexcept {}
 	};
-
+#endif
 	{
 		auto rs = zero_cost_serialization::unique_resource{ 0, [&](int) { test_scope_guard = 6; } };
 		assert(7 == test_scope_guard);
 	}
 	assert(6 == test_scope_guard);
 	test_scope_guard = 7;
+#if ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS
 	try {
 		auto f = [&](const auto&) {test_scope_guard = 6; };
 		auto rs = zero_cost_serialization::unique_resource<throws, decltype(f)> {0, f};
@@ -315,7 +319,7 @@ int main()
 	catch (...) {
 		assert(7 == test_scope_guard);
 	}
-	
+#endif
 	if constexpr (::is_zero_cost_serialization) {
 		struct TestFun
 		{
@@ -343,7 +347,7 @@ int main()
 		static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::apply_size_v<TestFunT, TestFun> == 5);
 		static_assert(not ::is_zero_cost_serialization or zero_cost_serialization::alignment_v<std::uint_least32_t, char> == 4);
 		static_assert(not ::is_zero_cost_serialization or sizeof(TestFunT) == 8);
-		std::byte testbuf[5]{};
+		alignas(TestFunT) std::byte testbuf[5]{};
 		zero_cost_serialization::apply<TestFunT>(TestFun{}, testbuf);
 		static_assert(std::is_invocable_v<TestFun2>);
 		static_assert(zero_cost_serialization::detail::is_unpack_invocable_v<TestFun2, TestFunT2>);
