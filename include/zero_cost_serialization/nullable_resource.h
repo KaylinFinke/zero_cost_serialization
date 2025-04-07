@@ -15,10 +15,19 @@ namespace zero_cost_serialization
 	{
 		constexpr nullable_resource() noexcept = default;
 
-		explicit constexpr nullable_resource(std::same_as<T> auto&& t) noexcept
-			: value{std::forward<decltype(t)>(t)}
+		explicit constexpr nullable_resource(const T& t) noexcept
+			: value{t}
 		{}
-		constexpr nullable_resource(std::same_as<std::nullptr_t> auto&&) noexcept
+
+		explicit constexpr nullable_resource(T&& t) noexcept
+			: value{ std::move(t) }
+		{}
+
+		constexpr nullable_resource(const std::nullptr_t&) noexcept
+			: value{null_value}
+		{}
+
+		constexpr nullable_resource(std::nullptr_t&&) noexcept
 			: value{null_value}
 		{}
 
@@ -44,7 +53,13 @@ namespace zero_cost_serialization
 			return null_value != value;
 		}
 
-		constexpr decltype(auto) operator=(std::same_as<std::nullptr_t> auto&&) noexcept
+		constexpr decltype(auto) operator=(std::nullptr_t&&) noexcept
+		{
+			value = null_value;
+			return *this;
+		}
+
+		constexpr decltype(auto) operator=(const std::nullptr_t&) noexcept
 		{
 			value = null_value;
 			return *this;
