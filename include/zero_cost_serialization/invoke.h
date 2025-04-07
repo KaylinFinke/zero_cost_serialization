@@ -98,9 +98,9 @@ namespace zero_cost_serialization {
 				auto new_size = data.size();
 				auto new_data = static_cast<void*>(data.data());
 				if (auto ptr = std::align((std::max)({ alignof(Ts)... }), detail::required_size<Ts...>(), new_data, new_size); not ptr)
-					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently sized to construct the arguments for F.");
-				else if (new_size not_eq data.size())
 					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently aligned to construct the arguments for F.");
+				else if (new_size not_eq data.size())
+					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently sized to construct the arguments for F.");
 
 				std::tuple < std::conditional_t < std::is_unbounded_array_v<Ts>, std::span<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>> ... > ptrs;
 

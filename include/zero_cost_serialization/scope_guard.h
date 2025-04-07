@@ -3,6 +3,7 @@
 #ifdef E7FA552B69C64F93ABD4FB1234A506F1
 #include "zero_cost_serialization/detail/platform.h"
 #include "zero_cost_serialization/constraint.h"
+#include "zero_cost_serialization/detail/error.h"
 #include <climits>
 
 namespace zero_cost_serialization
@@ -13,13 +14,10 @@ namespace zero_cost_serialization
 		[[nodiscard]] explicit scope_exit(auto&& fn) 
 			noexcept(std::is_nothrow_constructible_v<EF, decltype(fn)> or std::is_nothrow_constructible_v<EF, decltype(fn)&>)
 			requires(not std::is_same_v<std::remove_cvref_t<decltype(fn)>, scope_exit> and std::is_constructible_v<EF, decltype(fn)>)
-		try : exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
+			ZERO_COST_SERIALIZATION_TRY
+			: exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
 		{}
-		catch (...)
-		{
-			fn();
-			throw;
-		}
+		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); throw; })
 
 		[[nodiscard]] scope_exit(scope_exit&& other)
 			noexcept(std::is_nothrow_move_constructible_v<EF> or std::is_nothrow_copy_constructible_v<EF>)
@@ -56,14 +54,11 @@ namespace zero_cost_serialization
 		[[nodiscard]] explicit scope_fail(auto&& fn)
 			noexcept(std::is_nothrow_constructible_v<EF, decltype(fn)> or std::is_nothrow_constructible_v<EF, decltype(fn)&>)
 			requires(not std::is_same_v<std::remove_cvref_t<decltype(fn)>, scope_fail> and std::is_constructible_v<EF, decltype(fn)>)
-		try : exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
+		ZERO_COST_SERIALIZATION_TRY
+			: exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
 			, enabled{ unsigned(INT_MIN) | unsigned(std::uncaught_exceptions()) }
 		{}
-		catch (...)
-		{
-			fn();
-			throw;
-		}
+		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); throw; })
 
 		[[nodiscard]] scope_fail(scope_fail&& other)
 			noexcept(std::is_nothrow_move_constructible_v<EF> or std::is_nothrow_copy_constructible_v<EF>)
