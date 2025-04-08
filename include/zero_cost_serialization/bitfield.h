@@ -194,6 +194,14 @@ namespace zero_cost_serialization {
 			return not std::same_as<native_type<N>, void>;
 		}
 
+		[[nodiscard]] static consteval auto has_conversion() noexcept
+		{
+			if constexpr (sizeof...(Ts) == 2)
+				return std::is_same_v<runtime_type<1>, std::byte>;
+			else
+				return sizeof...(Ts) == 1;
+		}
+
 		static constexpr auto bits = std::size_t{ offset<sizeof...(Ts)>() };
 		static constexpr auto bytes = std::size_t{ bits / std::numeric_limits<unsigned char>::digits + ((bits % std::numeric_limits<unsigned char>::digits) not_eq 0) };
 
@@ -526,7 +534,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T = runtime_type<0>>
-		requires (sizeof...(Ts) == 1 and std::same_as<T, runtime_type<0>>)
+		requires (has_conversion() and std::same_as<T, runtime_type<0>>)
 		[[nodiscard]] constexpr operator T() const noexcept
 		{
 			return get_value<0>();
@@ -534,14 +542,14 @@ namespace zero_cost_serialization {
 
 		constexpr auto operator=(runtime_type<0>&& t) & noexcept
 		{
-			static_assert(sizeof...(Ts) == 1);
+			static_assert(has_conversion());
 			set_value(t);
 			return t;
 		}
 
 		constexpr auto operator=(const runtime_type<0>& t) & noexcept
 		{
-			static_assert(sizeof...(Ts) == 1);
+			static_assert(has_conversion());
 			set_value(t);
 			return t;
 		}
