@@ -48,7 +48,7 @@ namespace zero_cost_serialization
 			return value;
 		}
 
-		explicit constexpr operator bool() const noexcept
+		explicit constexpr operator auto() const noexcept
 		{
 			return null_value != value;
 		}
