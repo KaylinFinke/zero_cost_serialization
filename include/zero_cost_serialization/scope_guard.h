@@ -17,7 +17,7 @@ namespace zero_cost_serialization
 			ZERO_COST_SERIALIZATION_TRY
 			: exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
 		{}
-		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); throw; })
+		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); if constexpr (not (std::is_nothrow_constructible_v<EF, decltype(fn)> or std::is_nothrow_constructible_v<EF, decltype(fn)&>)) throw; })
 
 		[[nodiscard]] scope_exit(scope_exit&& other)
 			noexcept(std::is_nothrow_move_constructible_v<EF> or std::is_nothrow_copy_constructible_v<EF>)
@@ -58,7 +58,7 @@ namespace zero_cost_serialization
 			: exitfun{zero_cost_serialization::forward_if_noexcept<EF>(std::forward<decltype(fn)>(fn))}
 			, enabled{ unsigned(INT_MIN) | unsigned(std::uncaught_exceptions()) }
 		{}
-		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); throw; })
+		ZERO_COST_SERIALIZATION_CATCH(..., { fn(); if constexpr (not (std::is_nothrow_constructible_v<EF, decltype(fn)> or std::is_nothrow_constructible_v<EF, decltype(fn)&>)) throw; })
 
 		[[nodiscard]] scope_fail(scope_fail&& other)
 			noexcept(std::is_nothrow_move_constructible_v<EF> or std::is_nothrow_copy_constructible_v<EF>)
