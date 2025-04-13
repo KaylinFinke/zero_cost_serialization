@@ -15,7 +15,7 @@ namespace zero_cost_serialization {
 	{
 		auto new_size = sizeof(data);
 		auto new_data = static_cast<void*>(&data);
-		auto _ = std::align(alignof(T), std::max(sizeof(data), sizeof(T)), new_data, new_size);
+		[[maybe_unused]] auto _ = std::align(alignof(T), std::max(sizeof(data), sizeof(T)), new_data, new_size);
 		if (new_size == sizeof(data)) {
 			ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 			return reinterpret_cast<T*>(std::memmove(&data, &data, sizeof(data)));
@@ -30,7 +30,7 @@ namespace zero_cost_serialization {
 	{
 		auto new_size = sizeof(data);
 		auto new_data = static_cast<void*>(&data);
-		auto _ = std::align(alignof(T), std::max(sizeof(data), sizeof(T)), new_data, new_size);
+		[[maybe_unused]] auto _ = std::align(alignof(T), std::max(sizeof(data), sizeof(T)), new_data, new_size);
 		if (new_size == sizeof(data)) {
 			ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
 			return reinterpret_cast<T*>(std::memmove(&data, &data, sizeof(data)));
