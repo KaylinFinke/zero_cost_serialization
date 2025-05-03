@@ -153,7 +153,7 @@ namespace zero_cost_serialization
 	class unique_resource
 	{
 		using RS = std::conditional_t<std::is_object_v<R>, R, std::reference_wrapper<std::remove_reference_t<R>>>;
-		detail::holder<RS> resource = {};
+		ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS detail::holder<RS> resource = {};
 		ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS detail::holder<D> deleter = {};
 		bool enabled = {};
 
@@ -173,8 +173,8 @@ namespace zero_cost_serialization
 
 		unique_resource(unique_resource&& other)
 			noexcept(std::is_nothrow_move_constructible_v<RS> and std::is_nothrow_move_constructible_v<D>)
-			: resource{ std::move_if_noexcept<RS>(other.resource) }
-			, deleter{ std::move_if_noexcept<RS>(other.deleter), zero_cost_serialization::scope_fail{[&] 
+			: resource{ std::move_if_noexcept<RS>(other.resource.value), zero_cost_serialization::scope_fail{[]{}}}
+			, deleter{ std::move_if_noexcept<D>(other.deleter.value), zero_cost_serialization::scope_fail{[&]
 				{ 
 					if constexpr (std::is_nothrow_move_constructible_v<RS>)
 						if (other.enabled) {
@@ -182,7 +182,7 @@ namespace zero_cost_serialization
 							other.get_deleter()(get());
 						}
 				}}}
-			, enabled{other.enabled}
+			, enabled{std::exchange(other.enabled, false)}
 		{}
 
 		decltype(auto) operator=(unique_resource&& other) noexcept(std::is_nothrow_move_assignable_v<RS> and std::is_nothrow_move_assignable_v<D>)
