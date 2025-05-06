@@ -6,6 +6,7 @@
 #include <new>
 #include <type_traits>
 #include <span>
+#include <memory>
 #include "zero_cost_serialization/detail/warning.h"
 
 namespace zero_cost_serialization {
