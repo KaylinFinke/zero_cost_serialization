@@ -167,6 +167,7 @@ namespace zero_cost_serialization
 				and (std::is_nothrow_constructible_v<RS, decltype(r)> or std::is_constructible_v<RS, decltype(r)&>)
 				and (std::is_nothrow_constructible_v<D, decltype(d)> or std::is_constructible_v<D, decltype(d)&>))
 			: resource{ std::forward<decltype(r)>(r), zero_cost_serialization::scope_fail{[&] { d(r); }} }
+ZERO_COST_SERIALIZATION_THIS_USED_IN_MEMBER_INIT
 			, deleter{ std::forward<decltype(d)>(d), zero_cost_serialization::scope_fail{[&,this] { d(get()); }} }
 			, enabled{true}
 			{}
