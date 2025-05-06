@@ -2,6 +2,7 @@
 #define E7FA552B69C64F93ABD4FB1234A506F1
 #ifdef E7FA552B69C64F93ABD4FB1234A506F1
 #include "zero_cost_serialization/detail/platform.h"
+#include "zero_cost_serialization/detail/warning.h"
 #include "zero_cost_serialization/constraint.h"
 #include "zero_cost_serialization/detail/error.h"
 #include <climits>
