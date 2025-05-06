@@ -277,7 +277,7 @@ int main()
 
 	struct throws
 	{
-		[[noreturn]] throws()
+		[[maybe_unused]] [[noreturn]] throws()
 		{
 			throw 0;
 		}
@@ -289,10 +289,10 @@ int main()
 
 	struct throws_fn
 	{
-		throws_fn() = default;
-		[[noreturn]] throws_fn(throws_fn&&) { throw 0; }
+		[[maybe_unused]] throws_fn() = default;
+		[[noreturn]] [[maybe_unused]] throws_fn(throws_fn&&) { throw 0; }
 		[[noreturn]] throws_fn(const throws_fn&) { throw 0; }
-		void operator()(const throws&) const noexcept {}
+		[[maybe_unused]] void operator()(const throws&) const noexcept {}
 		void operator()(const int&) const noexcept {}
 	};
 #endif

@@ -34,6 +34,8 @@ set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE} ${ZERO_COST_SERIALIZATION_ROOT_DIR}/clang/zero_cost_serialization/detail/warning.h)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE} ${ZERO_COST_SERIALIZATION_ROOT_DIR}/msvc/zero_cost_serialization/detail/warning.h)
 else()
     set(ZERO_COST_SERIALIZATION_LIBRARY_SOURCE ${ZERO_COST_SERIALIZATION_LIBRARY_SOURCE} ${ZERO_COST_SERIALIZATION_ROOT_DIR}/compiler/zero_cost_serialization/detail/warning.h)
 endif()
@@ -50,6 +52,8 @@ target_compile_features(zero_cost_serialization INTERFACE cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_ROOT_DIR}/clang)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_ROOT_DIR}/msvc)
 else()
     target_include_directories(zero_cost_serialization INTERFACE ${ZERO_COST_SERIALIZATION_ROOT_DIR}/compiler)
 endif()
@@ -80,10 +84,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/Wall
                         /wd4820                     # 'bytes' bytes padding added after construct 'member_name'
                         /wd5027                     # 'type': move assignment operator was implicitly defined as deleted
+                        /wd4625                     # 'type' : copy constructor was implicitly defined as deleted
                         /wd4626                     # 'derived class' : assignment operator was implicitly defined as deleted because a base class assignment operator is inaccessible or deleted
                         /wd5045                     # Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
                         /wd4711                     # function 'function' selected for inline expansion
                         /wd4710                     # 'function' : function not inlined
+                        /wd4868                     # compiler may not enforce left-to-right evaluation order in braced initializer list
     )
 endif()
 
