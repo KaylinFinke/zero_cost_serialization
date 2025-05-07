@@ -70,14 +70,14 @@ namespace zero_cost_serialization {
 
 	template <typename T, typename U>
 	requires std::is_pointer_v<T> and detail::strict_alias<std::remove_pointer_t<T>, U>
-	[[nodiscard]] auto strict_alias_cast(U* u) noexcept
+	auto strict_alias_cast(U* u) noexcept
 	{
 		return reinterpret_cast<T>(u);
 	}
 
 	template <typename T, typename U>
 	requires std::is_reference_v<T> and detail::strict_alias<std::remove_reference_t<T>, U>
-	[[nodiscard]] decltype(auto) strict_alias_cast(U&& u) noexcept
+	decltype(auto) strict_alias_cast(U&& u) noexcept
 	{
 		return reinterpret_cast<T>(u);
 	}

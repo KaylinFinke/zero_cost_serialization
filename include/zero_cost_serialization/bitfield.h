@@ -108,13 +108,13 @@ namespace zero_cost_serialization {
 		using native_or_void = decltype(std::tuple_cat(std::declval<native_types>(), std::declval<std::tuple<void>>()));
 
 		template <std::size_t N>
-		[[nodiscard]] static consteval auto size() noexcept
+		static consteval auto size() noexcept
 		{
 			return static_cast<common_type>(std::tuple_element_t<N, tuple>::value);
 		}
 
 		template <std::size_t... S>
-		[[nodiscard]] static consteval auto offset(std::index_sequence<S...>) noexcept
+		static consteval auto offset(std::index_sequence<S...>) noexcept
 		{
 			return static_cast<common_type>((size<S>() + ...));
 		}
@@ -180,7 +180,7 @@ namespace zero_cost_serialization {
 		static constexpr auto e_bits = exponent<std::tuple_element_t<N, tuple>>::e_bits;
 
 		template <std::size_t N>
-		[[nodiscard]] static consteval auto offset() noexcept
+		static consteval auto offset() noexcept
 		{
 			if constexpr (not N)
 				return common_type{};
@@ -189,12 +189,12 @@ namespace zero_cost_serialization {
 		}
 
 		template <std::size_t N>
-		[[nodiscard]] static consteval auto has_fast_path() noexcept
+		static consteval auto has_fast_path() noexcept
 		{
 			return not std::same_as<native_type<N>, void>;
 		}
 
-		[[nodiscard]] static consteval auto has_conversion() noexcept
+		static consteval auto has_conversion() noexcept
 		{
 			if constexpr (sizeof...(Ts) == 2)
 				return std::is_same_v<runtime_type<1>, std::byte>;
@@ -215,7 +215,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T, std::size_t... Is>
-		[[nodiscard]] static consteval auto find_index(const std::index_sequence<Is...>&) noexcept
+		static consteval auto find_index(const std::index_sequence<Is...>&) noexcept
 		{
 			auto unique = true;
 			auto i = sizeof...(Ts);
@@ -226,7 +226,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T>
-		[[nodiscard]] static consteval auto index() noexcept
+		static consteval auto index() noexcept
 		{
 			return find_index<T>(std::index_sequence_for<Ts...>());
 		}
@@ -245,7 +245,7 @@ namespace zero_cost_serialization {
 		// enumerations which do not have this pitfall.
 		template <std::size_t N>
 		requires (N < sizeof...(Ts) and (not size<N>() or has_fast_path<N>()))
-		[[nodiscard]] constexpr auto get_integral() const noexcept
+		constexpr auto get_integral() const noexcept
 		{
 			if constexpr (size<N>()) {
 				using underlying_type = detail::underlying_integral<int_type<N>>;
@@ -270,7 +270,7 @@ namespace zero_cost_serialization {
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts) and (bool(size<N>()) and not has_fast_path<N>()))
-		[[nodiscard]] constexpr auto get_integral() const noexcept
+		constexpr auto get_integral() const noexcept
 		{
 			constexpr auto s_bit = offset<N>();
 			constexpr auto s_shift = bit(s_bit);
@@ -422,7 +422,7 @@ namespace zero_cost_serialization {
 		{
 			bitfield* b;
 			using value_type = runtime_type<N>;
-			[[nodiscard]] constexpr operator value_type() const noexcept
+			constexpr operator value_type() const noexcept
 			{
 				return b->get_value<N>();
 			}
@@ -462,7 +462,7 @@ namespace zero_cost_serialization {
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		[[nodiscard]] constexpr auto get_value() const noexcept
+		constexpr auto get_value() const noexcept
 		{
 			if constexpr (std::is_floating_point_v<runtime_type<N>>)
 				return zero_cost_serialization::to_float<runtime_type<N>, m_bits<N>, e_bits<N>>(get_integral<N>());
@@ -472,70 +472,70 @@ namespace zero_cost_serialization {
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		[[nodiscard]] constexpr auto get_value() const noexcept
+		constexpr auto get_value() const noexcept
 		{
 			return get_value<type_index<T>>();
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() const & noexcept
+		constexpr auto get() const & noexcept
 		{
 			return get_value<N>();
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() const & noexcept
+		constexpr auto get() const & noexcept
 		{
 			return get_value<type_index<T>>();
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() const && noexcept
+		constexpr auto get() const && noexcept
 		{
 			return get_value<N>();
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() const && noexcept
+		constexpr auto get() const && noexcept
 		{
 			return get_value<type_index<T>>();
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() & noexcept
+		constexpr auto get() & noexcept
 		{
 			return field_proxy<N>{this};
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() & noexcept
+		constexpr auto get() & noexcept
 		{
 			return field_proxy<type_index<T>>{this};
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() && noexcept
+		constexpr auto get() && noexcept
 		{
 			return get_value<N>();
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		[[nodiscard]] constexpr auto get() && noexcept
+		constexpr auto get() && noexcept
 		{
 			return get_value<type_index<T>>();
 		}
 
 		template <typename T = runtime_type<0>>
 		requires (has_conversion() and std::same_as<T, runtime_type<0>>)
-		[[nodiscard]] constexpr operator T() const noexcept
+		constexpr operator T() const noexcept
 		{
 			return get_value<0>();
 		}
@@ -555,13 +555,13 @@ namespace zero_cost_serialization {
 		}
 
 	private:
-		[[nodiscard]] static constexpr auto bit(const auto n) noexcept
+		static constexpr auto bit(const auto n) noexcept
 		{
 			return n % std::numeric_limits<unsigned char>::digits;
 		}
 
 		template <typename T, std::size_t N>
-		[[nodiscard]] static constexpr auto contained_in_idx(const std::size_t byte) noexcept
+		static constexpr auto contained_in_idx(const std::size_t byte) noexcept
 		{
 			if constexpr (not std::has_unique_object_representations_v<T> or std::endian::native not_eq std::endian::little)
 				return false;
@@ -573,7 +573,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <std::size_t N, typename T, bool aligned>
-		[[nodiscard]] static consteval auto native_offset() noexcept
+		static consteval auto native_offset() noexcept
 		{
 			constexpr auto byte_offset = std::size_t{ offset<N>() / std::numeric_limits<unsigned char>::digits };
 			constexpr auto first = std::find_if(detail::integer_iterator{}, detail::integer_iterator{ byte_offset }, contained_in_idx<T, N>);
@@ -591,7 +591,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <std::size_t N, bool aligned, typename... TTs, std::size_t... Is>
-		[[nodiscard]] static consteval auto first_type(const std::index_sequence<Is...>&, const std::tuple<TTs...>&) noexcept
+		static consteval auto first_type(const std::index_sequence<Is...>&, const std::tuple<TTs...>&) noexcept
 		{
 			return std::min(std::initializer_list<std::size_t>{(native_offset<N, TTs, aligned>() not_eq bytes ? Is : sizeof...(Is))...});
 		}
@@ -603,7 +603,7 @@ namespace zero_cost_serialization {
 			std::tuple_element_t<first_type<N, false>(std::make_index_sequence<std::tuple_size_v<native_types>>(), native_types()), native_or_void>>;
 
 		template <std::size_t N>
-		[[nodiscard]] static consteval auto native_offset() noexcept
+		static consteval auto native_offset() noexcept
 		{
 			if constexpr (constexpr auto off = native_offset<N, native_type<N>, true>(); off not_eq bytes) 
 				return off;
@@ -612,7 +612,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T, std::size_t N>
-		[[nodiscard]] static constexpr auto extract(auto& s) noexcept
+		static constexpr auto extract(auto& s) noexcept
 		{
 			alignas(T) std::array<std::byte, sizeof(T)> v;
 			static_assert(std::has_unique_object_representations_v<decltype(v)>);
@@ -674,7 +674,7 @@ namespace zero_cost_serialization {
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
-	[[nodiscard]] constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
+	constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
 	{
 		return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto& l, const auto& r)
 		{
@@ -686,14 +686,14 @@ namespace zero_cost_serialization {
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
-	[[nodiscard]] constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
+	constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
 	{
 		return a <=> b == std::strong_ordering::equal;
 	}
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
-	[[nodiscard]] constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
+	constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
 	{
 		return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto & l, const auto & r)
 		{
@@ -705,7 +705,7 @@ namespace zero_cost_serialization {
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
-	[[nodiscard]] constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
+	constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
 	{
 		return a <=> b == std::partial_ordering::equivalent;
 	}
@@ -723,7 +723,7 @@ namespace std {
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
-	struct hash<zero_cost_serialization::bitfield<Ts...>> { [[nodiscard]] constexpr auto operator()(const zero_cost_serialization::bitfield<Ts...>& b) const noexcept
+	struct hash<zero_cost_serialization::bitfield<Ts...>> { constexpr auto operator()(const zero_cost_serialization::bitfield<Ts...>& b) const noexcept
 	{
 		constexpr auto bit_size = (Ts::value + ... + 0);
 		constexpr auto trailing_bits = bit_size % std::numeric_limits<unsigned char>::digits;
@@ -738,7 +738,7 @@ namespace std {
 
 	template <typename... Ts>
 	requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
-	struct hash<zero_cost_serialization::bitfield<Ts...>> { [[nodiscard]] constexpr auto operator()(const zero_cost_serialization::bitfield<Ts...>& b) const noexcept
+	struct hash<zero_cost_serialization::bitfield<Ts...>> { constexpr auto operator()(const zero_cost_serialization::bitfield<Ts...>& b) const noexcept
 	{
 		return [&] <std::size_t... Is>(const std::index_sequence<Is...>&) {
 			auto hash_element = []<typename T>(auto h, T t) {

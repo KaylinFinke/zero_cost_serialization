@@ -13,26 +13,26 @@
 namespace zero_cost_serialization {
 	namespace detail {
 		template <typename F, typename Args, typename T, std::size_t... Is>
-		[[nodiscard]] decltype(auto) apply(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data)))
+		decltype(auto) apply(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data)))
 		{
 			return zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data);
 		}
 
 		template <typename T, std::size_t... Is>
-		[[nodiscard]] consteval auto invoke_size_pack(const std::index_sequence<Is...>&) noexcept
+		consteval auto invoke_size_pack(const std::index_sequence<Is...>&) noexcept
 		{
 			return invoke_size_v<std::remove_reference_t<std::tuple_element_t<Is, T>>...>;
 		}
 
 		template <typename T, std::size_t... Is>
-		[[nodiscard]] consteval auto invoke_align_pack(const std::index_sequence<Is...>&) noexcept
+		consteval auto invoke_align_pack(const std::index_sequence<Is...>&) noexcept
 		{
 			return zero_cost_serialization::alignment_v<std::byte, std::remove_reference_t<std::tuple_element_t<Is, T>>...>;
 		}
 
 		template <typename T, typename F, typename Args>
 		requires (is_unpack_invocable_v<F, T, Args> and not is_unpack_invocable_flex_v<F, T, Args>)
-		[[nodiscard]] consteval auto apply_size() noexcept
+		consteval auto apply_size() noexcept
 		{
 			if constexpr (not empty_class<T>) {
 				using TT = tuple_of_refs<T>;
@@ -42,14 +42,14 @@ namespace zero_cost_serialization {
 		}
 		template <typename T, typename F, typename Args>
 		requires is_unpack_invocable_flex_v<F, T, Args>
-		[[nodiscard]] consteval auto apply_size() noexcept
+		consteval auto apply_size() noexcept
 		{
 			using TT = tuple_of_refs_flex<T>;
 			return invoke_size_pack<TT>(std::make_index_sequence<std::tuple_size_v<TT>>());
 		}
 
 		template <typename T>
-		[[nodiscard]] consteval auto apply_align() noexcept
+		consteval auto apply_align() noexcept
 		{
 			if constexpr (not empty_class<T>) {
 				using TT = tuple_of_refs<T>;
@@ -59,7 +59,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T, typename F, typename Args>
-		[[nodiscard]] consteval auto flex_element_size() noexcept
+		consteval auto flex_element_size() noexcept
 		{
 			if constexpr (is_unpack_invocable_flex_v<F, T, Args>) {
 				using TT = tuple_of_refs_flex<T>;
