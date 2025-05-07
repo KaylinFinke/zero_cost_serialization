@@ -275,7 +275,7 @@ namespace zero_cost_serialization {
 
 	namespace detail {
 		template <typename T, typename Traits>
-		[[nodiscard]] consteval auto is_serializable_element() noexcept
+		consteval auto is_serializable_element() noexcept
 		{
 			auto result = true;
 			auto offset = std::size_t{};
@@ -285,7 +285,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T, typename Traits>
-		[[nodiscard]] consteval auto align_or_integral_size() noexcept
+		consteval auto align_or_integral_size() noexcept
 		{
 			auto result = true;
 			auto offset = std::size_t{};
@@ -324,7 +324,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename Tuple, typename Traits, std::size_t... Is>
-		[[nodiscard]] consteval auto serializable_pack(const std::index_sequence<Is...>&) noexcept
+		consteval auto serializable_pack(const std::index_sequence<Is...>&) noexcept
 		{
 			auto result = true;
 			[[maybe_unused]] auto holds_int = false;
@@ -347,7 +347,7 @@ namespace zero_cost_serialization {
 
 	namespace detail {
 		template <typename Tuple, typename Traits, std::size_t... Is>
-		[[nodiscard]] consteval auto alignment(const std::index_sequence<Is...>&) noexcept
+		consteval auto alignment(const std::index_sequence<Is...>&) noexcept
 		{
 			return std::max({ detail::align_or_integral_size<
 				std::conditional_t<std::is_unbounded_array_v<std::tuple_element_t<Is, Tuple>>,

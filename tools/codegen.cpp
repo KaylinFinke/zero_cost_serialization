@@ -9,7 +9,7 @@
 #include <utility>
 
 template <std::size_t N>
-[[nodiscard]] consteval auto make_braces() noexcept
+consteval auto make_braces() noexcept
 {
 	using namespace std::literals::string_view_literals;
 	std::array<char, N * 3 + not N> s{};
@@ -19,7 +19,7 @@ template <std::size_t N>
 	return s;
 }
 
-[[nodiscard]] constexpr auto digits_n(std::integral auto t) noexcept
+constexpr auto digits_n(std::integral auto t) noexcept
 {
 	int i{ t < decltype(t){} };
 	do { t /= 10; ++i; } while (t);
@@ -27,13 +27,13 @@ template <std::size_t N>
 }
 
 template <std::size_t... S>
-[[nodiscard]] constexpr auto digits_pack(std::index_sequence<S...>) noexcept
+constexpr auto digits_pack(std::index_sequence<S...>) noexcept
 {
 	return (digits_n(S) + ...);
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr auto digits() noexcept
+constexpr auto digits() noexcept
 {
 	return N ? digits_pack(std::make_index_sequence<N>()) : std::size_t{};
 }
@@ -51,7 +51,7 @@ constexpr auto to_chars(std::span<char> s, std::integral auto n) noexcept
 }
 
 template <std::size_t N>
-[[nodiscard]] consteval auto make_binds() noexcept
+consteval auto make_binds() noexcept
 {
 	std::array<char, 2 * N + not N + digits<N>()> s{};
 	std::span v = std::span(s).subspan(0);
@@ -92,10 +92,10 @@ int main()
 		std::cout << std::format("\ttemplate <typename T>\n\tstruct init_n<T, std::size_t{{{}}}, std::void_t<decltype(T({:.{}s}))>> : std::true_type {{}};\n\n", i, braces<n>, i ? i * 3 - 1 : 0);
 	std::cout << "\ttemplate <typename T, typename = void>\n\tstruct make_tuple { constexpr auto operator()(T&) const noexcept\n\t{\n\t\treturn std::make_tuple();\n\t}};\n" << '\n';
 	for (auto i = 0, j = digits_n(i) + 1; i not_eq n; j += digits_n(i) + 2)
-		std::cout << std::format("\ttemplate <typename T>\n\tstruct make_tuple<T, std::integral_constant<std::size_t, std::size_t{{{}}}>> {{ [[maybe_unused, nodiscard]] constexpr auto operator()(T& t) const noexcept \n\t{{\n\t\tauto& [{:.{}s}] = t;\n\t\treturn std::tie({:.{}s});\n\t}}}};\n\n",
+		std::cout << std::format("\ttemplate <typename T>\n\tstruct make_tuple<T, std::integral_constant<std::size_t, std::size_t{{{}}}>> {{ [[maybe_unused]] constexpr auto operator()(T& t) const noexcept \n\t{{\n\t\tauto& [{:.{}s}] = t;\n\t\treturn std::tie({:.{}s});\n\t}}}};\n\n",
 			++i, make_binds<n>().data(), j, make_binds<n>().data(), j);
 	std::cout << "\ttemplate <typename T, std::size_t... Is>" << '\n';
-	std::cout << "\t[[nodiscard]] consteval auto field_count(const std::index_sequence<Is...>&) noexcept" << '\n';
+	std::cout << "\tconsteval auto field_count(const std::index_sequence<Is...>&) noexcept" << '\n';
 	std::cout << "\t{" << '\n';
 	std::cout << "\t\tauto n = std::size_t{};" << '\n';
 	std::cout << "\t\t((n = init_n<T, Is>::value ? Is : n), ...);" << '\n';
@@ -103,7 +103,7 @@ int main()
 	std::cout << "\t}" << '\n';
 	std::cout << "" << '\n';
 	std::cout << "\ttemplate <typename T>" << '\n';
-	std::cout << "\t[[nodiscard]] consteval auto field_count() noexcept" << '\n';
+	std::cout << "\tconsteval auto field_count() noexcept" << '\n';
 	std::cout << "\t{" << '\n';
 	std::cout << std::format("\t\treturn field_count<T>(std::make_index_sequence<{}>());\n", n + 1);
 	std::cout << "\t}" << '\n';
