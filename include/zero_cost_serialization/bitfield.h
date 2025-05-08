@@ -648,7 +648,7 @@ namespace zero_cost_serialization {
 		concept reflectable_bitfield = requires
 		{
 			requires non_empty_aggregate_class<T>;
-			requires trivial_and_standard_layout<T>;
+			requires trivially_copyable_and_standard_layout<T>;
 			requires std::regular<T>;
 			requires is_bitfield<T>::value;
 			requires bool(std::tuple_size_v<T>);
