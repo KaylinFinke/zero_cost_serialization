@@ -84,13 +84,13 @@ namespace zero_cost_serialization {
 		concept tuple_like_binding = requires { std::tuple_size<T>::value; };
 
 		template <typename T>
-		concept trivial_and_standard_layout = std::conjunction_v<std::is_trivial<T>, std::is_standard_layout<T>>;
+		concept trivially_copyable_and_standard_layout = std::conjunction_v<std::is_trivially_copyable<T>, std::is_standard_layout<T>>;
 
 		template <typename T>
 		concept reflectable = requires
 		{
 			requires not tuple_like_binding<T>;
-			requires trivial_and_standard_layout<T>;
+			requires trivially_copyable_and_standard_layout<T>;
 			requires std::semiregular<T>;
 		};
 
