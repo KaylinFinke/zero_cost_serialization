@@ -10,6 +10,7 @@
 #include <concepts>
 #include <functional>
 #include <span>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -35,6 +36,14 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T>
+		using range_type = std::conditional_t<std::disjunction_v<
+			std::is_same<std::remove_cvref_t<T>, char>,
+			std::is_same<std::remove_cvref_t<T>, char8_t>,
+			std::is_same<std::remove_cvref_t<T>, wchar_t>,
+			std::is_same<std::remove_cvref_t<T>, char16_t>,
+			std::is_same<std::remove_cvref_t<T>, char32_t>>, std::basic_string_view<T>, std::span<T>>;
+
+		template <typename T>
 		auto unpack_element(std::span<std::byte>& data) noexcept
 		{
 			using E = std::conditional_t<std::is_unbounded_array_v<T>, std::remove_extent_t<T>, T>;
@@ -46,13 +55,13 @@ namespace zero_cost_serialization {
 				return zero_cost_serialization::reinterpret_memory<E>(p.first(sizeof(E)));
 			else {
 				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_BEGIN
-				return std::span(zero_cost_serialization::reinterpret_memory<E>(p.first(sz)), count);
+				return range_type<E>(zero_cost_serialization::reinterpret_memory<E>(p.first(sz)), count);
 				ZERO_COST_SERIALIZATION_UNSAFE_BUFFER_USAGE_END
 			}
 		}
 
 		template <typename T>
-		constexpr decltype(auto) repack_element(std::conditional_t<std::is_unbounded_array_v<T>, std::span<std::remove_extent_t<T>>, std::add_pointer_t<T>> ptr) noexcept
+		constexpr decltype(auto) repack_element(std::conditional_t<std::is_unbounded_array_v<T>, range_type<std::remove_extent_t<T>>, std::add_pointer_t<T>> ptr) noexcept
 		{
 			if constexpr (std::is_unbounded_array_v<T>)
 				return ptr;
@@ -68,7 +77,7 @@ namespace zero_cost_serialization {
 		{
 			if constexpr (sizeof...(Ts)) {
 				return [] <std::size_t... Is>(const std::index_sequence<Is...>&) {
-					std::tuple<std::conditional_t<std::is_unbounded_array_v<Ts>, std::span<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>>...> ptrs;
+					std::tuple<std::conditional_t<std::is_unbounded_array_v<Ts>, range_type<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>>...> ptrs;
 
 					using Tuple = decltype(std::tuple_cat(std::declval<Args>(), std::forward_as_tuple((repack_element<Ts>(std::get<Is>(ptrs)))...)));
 
@@ -102,7 +111,7 @@ namespace zero_cost_serialization {
 				else if (new_size not_eq data.size())
 					ZERO_COST_SERIALIZATION_THROW_OR_TERMINATE("Supplied buffer was not sufficiently sized to construct the arguments for F.");
 
-				std::tuple < std::conditional_t < std::is_unbounded_array_v<Ts>, std::span<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>> ... > ptrs;
+				std::tuple < std::conditional_t < std::is_unbounded_array_v<Ts>, range_type<std::remove_extent_t<Ts>>, std::add_pointer_t<Ts>> ... > ptrs;
 
 				using Tuple = decltype(std::tuple_cat(std::forward<Args>(args), std::forward_as_tuple((repack_element<Ts>(std::get<Is>(ptrs)))...)));
 
@@ -138,7 +147,7 @@ namespace zero_cost_serialization {
 		auto tuple_of_refs_flex_span_helper(const T&, const std::index_sequence<Is...>&) noexcept
 		{
 			using TT = std::tuple<std::conditional_t<Is + 1 == std::tuple_size_v<T>,
-				std::span<std::conditional_t<detail::is_std_array_v<std::remove_reference_t<std::tuple_element_t<Is, T>>>, detail::value_type_or_void_type<std::remove_reference_t<std::tuple_element_t<Is, T>>>, std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>>>,
+				detail::range_type<std::conditional_t<detail::is_std_array_v<std::remove_reference_t<std::tuple_element_t<Is, T>>>, detail::value_type_or_void_type<std::remove_reference_t<std::tuple_element_t<Is, T>>>, std::remove_extent_t<std::remove_reference_t<std::tuple_element_t<Is, T>>>>>,
 				std::tuple_element_t<Is, T>>...>;
 			return std::add_pointer_t<TT>{};
 		}
