@@ -205,7 +205,7 @@ namespace client {
 		using message_type = server::hatch_dragon;
 		//changing the last type to a pointer the final member, less one extent, and adding a size_t
 		//shows that this handles a variable length message similar to C's flexible array member feature.
-		bool operator()(client::user_context*, const unit_id&, dragon_color, u8, std::span<char>) noexcept;
+		bool operator()(client::user_context*, const unit_id&, dragon_color, u8, std::string_view) noexcept;
 	};
 	struct handle_attack_result
 	{
@@ -455,7 +455,7 @@ namespace {
 		message.color = svr.active_dragon.color;
 		message.can_fly = svr.active_dragon.can_fly;
 		std::ranges::copy(svr.active_dragon.name, message.name.begin());
-		usr.told_dragon = server::send_message(usr.out, usr.out_size, message, svr.active_dragon.name.size() + 1);
+		usr.told_dragon = server::send_message(usr.out, usr.out_size, message, svr.active_dragon.name.size());
 	}
 
 	auto try_handle_network(server::server_context& svr, server::user_context& usr)
@@ -559,10 +559,10 @@ bool client::handle_attack_result::operator()(client::user_context* usr, const u
 }
 
 
-bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, u8, std::span<char> name) noexcept
+bool client::handle_hatch_dragon::operator()(client::user_context* usr, const unit_id& id, dragon_color color, u8, std::string_view name) noexcept
 {
 	//false results indicate a bug in our stack/server. we can't continue.
-	if (name.empty() or std::distance(std::ranges::find(name, '\0'), name.end()) not_eq 1 or name.size() > sizeof(server::hatch_dragon::name)) std::terminate();
+	if (name.empty() or name.find('\0') != std::string_view::npos or name.size() >= sizeof(server::hatch_dragon::name)) std::terminate();
 	if (color >= dragon_color::last) std::terminate();
 
 	std::cout << std::format("knight {} has spotted a fearsome {} dragon named {}!\n", usr->id, color_name.at(std::size_t(color)), std::string_view(name.data()));
@@ -571,7 +571,7 @@ bool client::handle_hatch_dragon::operator()(client::user_context* usr, const un
 	usr->has_dragon = true;
 	usr->active_dragon.id = id;
 	usr->active_dragon.color = color;
-	usr->active_dragon.name = name.data();
+	usr->active_dragon.name = name;
 
 	return true;
 }
