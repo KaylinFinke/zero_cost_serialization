@@ -90,6 +90,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
                         /wd4711                     # function 'function' selected for inline expansion
                         /wd4710                     # 'function' : function not inlined
                         /wd4868                     # compiler may not enforce left-to-right evaluation order in braced initializer list
+                        /wd4514                     # unreferenced inline function has been removed
     )
 endif()
 
@@ -123,6 +124,6 @@ if(${ZERO_COST_SERIALIZATION_BUILD_EXAMPLES})
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(zero_cost_serialization_tests PUBLIC -Wno-ignored-qualifiers)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        target_compile_options(zero_cost_serialization_tests PUBLIC /wd5266 /wd4514)
+        target_compile_options(zero_cost_serialization_tests PUBLIC /wd5266 /wd4514 /wd4702)
     endif()
 endif(${ZERO_COST_SERIALIZATION_BUILD_EXAMPLES})

@@ -88,6 +88,9 @@ namespace zero_cost_serialization {
 
 		template <typename T>
 		inline constexpr auto is_integral_bitfield_element_v = is_integral_bitfield_element<T>::value;
+
+		template <typename T>
+		concept bitfield_param = std::disjunction_v<std::is_integral<T>, std::is_floating_point<T>, std::is_enum<T>>;
 	}
 
 	template <typename... Ts>
@@ -433,16 +436,6 @@ namespace zero_cost_serialization {
 			}
 		};
 
-	public:
-		//NOTE: Alignment does not change the layout of the bitfield, instead larger alignment allows
-		// potentially faster access using aligned load/store on some platforms. Native bitfields are
-		// usually aligned to their largest member type. Prefer the same when possible.
-		//-------------------------------------------------------------------------------------
-		//WARNING: Memory is not implicltly initialized. Initialize this class with {} to zero memory
-		//unless you intend to copy existing memory into this class.
-		//-------------------------------------------------------------------------------------
-		std::array<std::byte, bytes> s;
-
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
 		constexpr auto set_value(const runtime_type<N>& value) noexcept
@@ -475,6 +468,24 @@ namespace zero_cost_serialization {
 		constexpr auto get_value() const noexcept
 		{
 			return get_value<type_index<T>>();
+		}
+
+		//NOTE: Alignment does not change the layout of the bitfield, instead larger alignment allows
+		// potentially faster access using aligned load/store on some platforms. Native bitfields are
+		// usually aligned to their largest member type. Prefer the same when possible.
+		//-------------------------------------------------------------------------------------
+		std::array<std::byte, bytes> s = {};
+	public:
+		bitfield() = default;
+
+		template <detail::bitfield_param... Us>
+		constexpr bitfield(Us&&... us)
+		{
+			[&] <std::size_t... Is>(const std::index_sequence<Is...>&)
+			{
+				static_assert((std::same_as<std::remove_cvref_t<Us>, decltype(get_value<Is>())> and ...));
+				(set_value<Is>(std::forward<Us>(us)), ...);
+			}(std::index_sequence_for<Us...>());
 		}
 
 		template <std::size_t N>
@@ -554,6 +565,47 @@ namespace zero_cost_serialization {
 			return t;
 		}
 
+		template <typename T>
+		requires (detail::tuple_like_binding<T> and std::tuple_size_v<T> == sizeof...(Ts))
+		operator T() const
+		{
+			return [this]<std::size_t... Is>(const std::index_sequence<Is...>&)
+			{
+				ZERO_COST_SERIALIZATION_MISSING_BRACES
+				return T{ this->get_value<Is>()... };
+			}(std::index_sequence_for<Ts...>());
+		}
+
+		friend constexpr auto operator<=>(const bitfield& a, const bitfield& b) noexcept requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
+		{
+			return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto& l, const auto& r)
+			{
+				auto o = std::strong_ordering::equal;
+				((o = o == std::strong_ordering::equal ? l.template get_value<Is>() <=> r.template get_value<Is>() : o), ...);
+				return o;
+			}(std::index_sequence_for<Ts...>(), a, b);
+		}
+
+		friend constexpr auto operator==(const bitfield& a, const bitfield& b) noexcept requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
+		{
+			return a <=> b == std::strong_ordering::equal;
+		}
+
+		friend constexpr auto operator<=>(const bitfield& a, const bitfield& b) noexcept requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
+		{
+			return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto & l, const auto & r)
+			{
+				auto o = std::partial_ordering::equivalent;
+				((o = o == std::partial_ordering::equivalent ? l.template get_value<Is>() <=> r.template get_value<Is>() : o), ...);
+				return o;
+			}(std::index_sequence_for<Ts...>(), a, b);
+		}
+
+		friend constexpr auto operator==(const bitfield& a, const bitfield& b) noexcept requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
+		{
+			return a <=> b == std::partial_ordering::equivalent;
+		}
+
 	private:
 		static constexpr auto bit(const auto n) noexcept
 		{
@@ -631,6 +683,8 @@ namespace zero_cost_serialization {
 
 		template <typename, typename>
 		friend struct is_serializable_type;
+		template <typename>
+		friend struct std::hash;
 	};
 	namespace detail {
 		template <typename... Ts>
@@ -647,7 +701,6 @@ namespace zero_cost_serialization {
 		template <typename T>
 		concept reflectable_bitfield = requires
 		{
-			requires non_empty_aggregate_class<T>;
 			requires trivially_copyable_and_standard_layout<T>;
 			requires std::regular<T>;
 			requires is_bitfield<T>::value;
@@ -671,44 +724,6 @@ namespace zero_cost_serialization {
 			}
 		}
 	};
-
-	template <typename... Ts>
-	requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
-	constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
-	{
-		return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto& l, const auto& r)
-		{
-			auto o = std::strong_ordering::equal;
-			((o = o == std::strong_ordering::equal ? l.template get_value<Is>() <=> r.template get_value<Is>() : o), ...);
-			return o;
-		}(std::index_sequence_for<Ts...>(), a, b);
-	}
-
-	template <typename... Ts>
-	requires (zero_cost_serialization::detail::is_integral_bitfield_element_v<Ts> and ...)
-	constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
-	{
-		return a <=> b == std::strong_ordering::equal;
-	}
-
-	template <typename... Ts>
-	requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
-	constexpr auto operator<=>(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
-	{
-		return[]<std::size_t... Is>(const std::index_sequence<Is...>&, const auto & l, const auto & r)
-		{
-			auto o = std::partial_ordering::equivalent;
-			((o = o == std::partial_ordering::equivalent ? l.template get_value<Is>() <=> r.template get_value<Is>() : o), ...);
-			return o;
-		}(std::index_sequence_for<Ts...>(), a, b);
-	}
-
-	template <typename... Ts>
-	requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
-	constexpr auto operator==(const bitfield<Ts...>& a, const bitfield<Ts...>& b) noexcept
-	{
-		return a <=> b == std::partial_ordering::equivalent;
-	}
 }
 namespace std {
 	template <typename... Ts>
