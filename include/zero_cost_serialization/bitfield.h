@@ -480,7 +480,7 @@ namespace zero_cost_serialization {
 		bitfield() = default;
 
 		template <detail::bitfield_param... Us>
-		constexpr bitfield(Us&&... us)
+		constexpr bitfield(Us&&... us) noexcept
 		{
 			[&] <std::size_t... Is>(const std::index_sequence<Is...>&)
 			{
@@ -489,60 +489,32 @@ namespace zero_cost_serialization {
 			}(std::index_sequence_for<Us...>());
 		}
 
-		template <std::size_t N>
-		requires (N < sizeof...(Ts))
-		constexpr auto get() const & noexcept
-		{
-			return get_value<N>();
-		}
-
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		constexpr auto get() const & noexcept
+		constexpr auto get() const noexcept
 		{
 			return get_value<type_index<T>>();
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		constexpr auto get() const && noexcept
+		constexpr auto get() const noexcept
 		{
 			return get_value<N>();
 		}
 
 		template <typename T>
 		requires (type_index<T> not_eq sizeof...(Ts))
-		constexpr auto get() const && noexcept
-		{
-			return get_value<type_index<T>>();
-		}
-
-		template <std::size_t N>
-		requires (N < sizeof...(Ts))
-		constexpr auto get() & noexcept
-		{
-			return field_proxy<N>{this};
-		}
-
-		template <typename T>
-		requires (type_index<T> not_eq sizeof...(Ts))
-		constexpr auto get() & noexcept
+		constexpr auto get() noexcept
 		{
 			return field_proxy<type_index<T>>{this};
 		}
 
 		template <std::size_t N>
 		requires (N < sizeof...(Ts))
-		constexpr auto get() && noexcept
+		constexpr auto get() noexcept
 		{
-			return get_value<N>();
-		}
-
-		template <typename T>
-		requires (type_index<T> not_eq sizeof...(Ts))
-		constexpr auto get() && noexcept
-		{
-			return get_value<type_index<T>>();
+			return field_proxy<N>{this};
 		}
 
 		template <typename T = runtime_type<0>>
@@ -605,6 +577,20 @@ namespace zero_cost_serialization {
 		friend constexpr auto operator==(const bitfield& a, const bitfield& b) noexcept requires (zero_cost_serialization::detail::is_float_bitfield_element_v<Ts> or ...)
 		{
 			return a <=> b == std::partial_ordering::equivalent;
+		}
+
+		template <typename T, typename U>
+		requires (std::same_as<std::remove_cvref_t<U>, bitfield> and type_index<T> not_eq sizeof...(Ts))
+		friend constexpr auto get(U&& u) noexcept
+		{
+			return std::forward<U>(u). template get<T>();
+		}
+
+		template <std::size_t N, typename T>
+		requires (std::same_as<std::remove_cvref_t<T>, bitfield> and N < sizeof...(Ts))
+		friend constexpr auto get(T&& t) noexcept
+		{
+			return std::forward<T>(t). template get<N>();
 		}
 
 	private:
