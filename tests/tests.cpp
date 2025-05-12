@@ -195,6 +195,14 @@ auto test() noexcept
 
 int main()
 {
+	zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>, zero_cost_serialization::float_constant<float, 24, 8, u32>, zero_cost_serialization::float_constant<float, 24, 8, u32>> fff;
+	assert(get<0>(fff) == 0.f && get<1>(fff) == 0.f && get<2>(fff) == 0.f);
+	auto&& [f_i, f_j, f_k] = fff;
+	f_i = 1.f;
+	f_j = 2.f;
+	f_k = 3.f;
+	assert(get<0>(fff) == 1.f && get<1>(fff) == 2.f && get<2>(fff) == 3.f);
+
 	[[maybe_unused]] auto test_nullable = std::hash<zero_cost_serialization::nullable_resource<int, 4>>{}(zero_cost_serialization::nullable_resource<int, 4>{});
 	[[maybe_unused]] auto test_hash = std::format(L"{}", zero_cost_serialization::nullable_resource<int, 4>{});
 
@@ -481,11 +489,11 @@ int main()
 			std::integral_constant < zero_cost_serialization::map::link, zero_cost_serialization::map::link{ 21 } > ,
 			std::integral_constant < zero_cost_serialization::map::link, zero_cost_serialization::map::link{ 21 } > ,
 			std::integral_constant <std::size_t, 32 >> ;
-		auto left = [](node& t) { return t.get<1>(); };
-		auto right = [](node& t) { return t.get<2>(); };
-		auto parent = [](node& t) { return t.get<3>(); };
-		auto color = [](node& t) { return t.get<0>(); };
-		auto key = [](node& t) { return t.get<4>(); };
+		auto left = [](node& t) -> decltype(auto) { return get<1>(t); };
+		auto right = [](node& t) -> decltype(auto) { return get<2>(t); };
+		auto parent = [](node& t) -> decltype(auto) { return get<3>(t); };
+		auto color = [](node& t) -> decltype(auto) { return get<0>(t); };
+		auto key = [](node& t) -> decltype(auto) { return get<4>(t); };
 		std::array<node, 1000> A{};
 		auto root = zero_cost_serialization::map::link::nil;
 		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
@@ -499,11 +507,11 @@ int main()
 	}
 	{
 		using node = std::tuple<zero_cost_serialization::map::color, zero_cost_serialization::map::link, zero_cost_serialization::map::link, zero_cost_serialization::map::link, std::size_t>;
-		auto left = [](node& t) -> decltype(auto) { return std::get<1>(t); };
-		auto right = [](node& t) -> decltype(auto) { return std::get<2>(t); };
-		auto parent = [](node& t) -> decltype(auto) { return std::get<3>(t); };
-		auto color = [](node& t) -> decltype(auto) { return std::get<0>(t); };
-		auto key = [](node& t) -> decltype(auto) { return std::get<4>(t); };
+		auto left = [](node& t) -> decltype(auto) { return get<1>(t); };
+		auto right = [](node& t) -> decltype(auto) { return get<2>(t); };
+		auto parent = [](node& t) -> decltype(auto) { return get<3>(t); };
+		auto color = [](node& t) -> decltype(auto) { return get<0>(t); };
+		auto key = [](node& t) -> decltype(auto) { return get<4>(t); };
 		std::array<node, 1000> A{};
 		auto root = zero_cost_serialization::map::link::nil;
 		for (auto i = std::size_t{}; i not_eq A.size(); ++i) {
