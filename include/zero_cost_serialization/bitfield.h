@@ -720,7 +720,13 @@ namespace std {
 	template <std::size_t I, typename... Ts>
 	struct tuple_element<I, zero_cost_serialization::bitfield<Ts...>>
 	{
-		using type = std::remove_cv_t<decltype(std::tuple_element_t<I, std::tuple<Ts...>>::value)>;
+		using type = decltype(std::declval<zero_cost_serialization::bitfield<Ts...>&>(). template get<I>());
+	};
+
+	template <std::size_t I, typename... Ts>
+	struct tuple_element<I, const zero_cost_serialization::bitfield<Ts...>>
+	{
+		using type = decltype(std::declval<const zero_cost_serialization::bitfield<Ts...>&>(). template get<I>());
 	};
 
 	template <typename... Ts>
