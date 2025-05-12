@@ -480,7 +480,7 @@ namespace zero_cost_serialization {
 		bitfield() = default;
 
 		template <detail::bitfield_param... Us>
-		constexpr bitfield(Us&&... us) noexcept
+		explicit constexpr bitfield(Us&&... us) noexcept
 		{
 			[&] <std::size_t... Is>(const std::index_sequence<Is...>&)
 			{

@@ -376,7 +376,7 @@ int main()
 	float g_float = g;
 	g = g_float;
 
-	zero_cost_serialization::bitfield<std::true_type, std::integral_constant<std::byte, std::byte{7}>> bool_test = false;
+	zero_cost_serialization::bitfield<std::true_type, std::integral_constant<std::byte, std::byte{7}>> bool_test{false};
 	bool xx = bool_test;
 	xx = bool_test;
 	bool_test = xx;
