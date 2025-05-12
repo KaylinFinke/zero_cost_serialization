@@ -5,6 +5,7 @@
 #include "zero_cost_serialization/strict_alias.h"
 #include "zero_cost_serialization/interchange_float.h"
 #include "zero_cost_serialization/serializable.h"
+#include "zero_cost_serialization/detail/warning.h"
 
 #include <algorithm>
 #include <array>
