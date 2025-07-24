@@ -91,7 +91,7 @@ namespace zero_cost_serialization {
 		inline constexpr auto is_integral_bitfield_element_v = is_integral_bitfield_element<T>::value;
 
 		template <typename T>
-		concept bitfield_param = std::disjunction_v<std::is_integral<T>, std::is_floating_point<T>, std::is_enum<T>>;
+		concept bitfield_param = std::disjunction_v<std::is_integral<std::remove_cvref_t<T>>, std::is_floating_point<std::remove_cvref_t<T>>, std::is_enum<std::remove_cvref_t<T>>>;
 	}
 
 	template <typename... Ts>
