@@ -99,7 +99,7 @@ namespace zero_cost_serialization {
 	(std::disjunction_v<std::is_integral<decltype(Ts::value)>, std::is_enum<decltype(Ts::value)>> and ...) and
 	((std::numeric_limits<zero_cost_serialization::detail::corresponding_unsigned_type<detail::underlying_integral<decltype(Ts::value)>>>::digits
 	>= static_cast<detail::underlying_integral<decltype(Ts::value)>>(Ts::value)) and ...)
-	struct bitfield
+	struct bitfield : std::ranges::view_interface<bitfield<Ts...>>
 	{
 	private:
 		using common_type = typename std::conditional_t<bool(sizeof...(Ts)),
@@ -487,6 +487,23 @@ namespace zero_cost_serialization {
 				static_assert((std::same_as<std::remove_cvref_t<Us>, decltype(get_value<Is>())> and ...));
 				(set_value<Is>(std::forward<Us>(us)), ...);
 			}(std::index_sequence_for<Us...>());
+		}
+
+		constexpr auto begin() noexcept
+		{
+			return s.begin();
+		}
+		constexpr auto end() noexcept
+		{
+			return s.end();
+		}
+		constexpr auto begin() const noexcept
+		{
+			return s.begin();
+		}
+		constexpr auto end() const noexcept
+		{
+			return s.end();
 		}
 
 		template <typename T>
