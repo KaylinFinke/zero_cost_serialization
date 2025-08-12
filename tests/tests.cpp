@@ -178,6 +178,12 @@ static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<c
 static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<const char&&>(std::declval<const int&&>())), const char&&>);
 static_assert(std::same_as<decltype(zero_cost_serialization::strict_alias_cast<const char&>(std::declval<const int&>())), const char&>);
 
+static_assert(std::is_standard_layout_v<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>>);
+static_assert(std::is_trivially_copyable_v<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>>);
+static_assert(std::ranges::sized_range<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>>);
+static_assert(std::ranges::contiguous_range<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>>);
+static_assert(std::ranges::view<zero_cost_serialization::bitfield<zero_cost_serialization::float_constant<float, 24, 8, u32>>>);
+
 #include <iostream>
 
 template <typename... Ts>
