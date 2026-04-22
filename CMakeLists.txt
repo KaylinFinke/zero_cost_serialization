@@ -7,7 +7,6 @@ option(ZERO_COST_SERIALIZATION_BUILD_TESTS "Build tests for zero_cost_serializat
 
 if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy; -header-filter=.; -checks=*;)
 endif(PROJECT_IS_TOP_LEVEL)
 
 set(ZERO_COST_SERIALIZATION_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -77,6 +76,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
                         -Wno-c++20-compat           #-Wc++20-compat library requires C++20.
                         -Wno-padded                 #-Wpadded emits a warning even when the structure cannot be reordered to eliminate internal padding.
                         -Wno-switch-default         #-Wswitch-default emits a warning for nod default even when the default case is unreachable
+                        -Wno-nrvo                   #-Wnovo emits a warning for non-elided nrvo
     )
 endif()
 

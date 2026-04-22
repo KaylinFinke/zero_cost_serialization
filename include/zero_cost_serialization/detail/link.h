@@ -50,7 +50,7 @@ namespace zero_cost_serialization::detail {
 	concept read_link_proj = read_proj<Proj, R, detail::link>;
 
 	template <typename R, typename... P, std::size_t... Is>
-	constexpr decltype(auto) ref_helper(R&& rng, detail::link x, std::index_sequence<Is...>, P... proj)
+	constexpr auto ref_helper(R&& rng, detail::link x, std::index_sequence<Is...>, P... proj) -> decltype(auto)
 	{
 		auto r = x;
 		auto last = (..., [&] { if constexpr (Is not_eq sizeof...(P) - 1) r = std::invoke(proj, std::forward<R>(rng)[detail::index<R>(r)]); else return proj; }());
@@ -58,7 +58,7 @@ namespace zero_cost_serialization::detail {
 	}
 
 	template <typename R, typename... P>
-	constexpr decltype(auto) ref(R&& rng, detail::link x, P... proj)
+	constexpr auto ref(R&& rng, detail::link x, P... proj) -> decltype(auto)
 	{
 		return detail::ref_helper(std::forward<R>(rng), x, std::index_sequence_for<P...>(), std::forward<P>(proj)...);
 	}

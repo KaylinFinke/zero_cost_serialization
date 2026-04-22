@@ -61,7 +61,7 @@ namespace zero_cost_serialization {
 		}
 
 		template <typename T>
-		constexpr decltype(auto) repack_element(std::conditional_t<std::is_unbounded_array_v<T>, range_type<std::remove_extent_t<T>>, std::add_pointer_t<T>> ptr) noexcept
+		constexpr auto repack_element(std::conditional_t<std::is_unbounded_array_v<T>, range_type<std::remove_extent_t<T>>, std::add_pointer_t<T>> ptr) noexcept -> decltype(auto)
 		{
 			if constexpr (std::is_unbounded_array_v<T>)
 				return ptr;
@@ -101,7 +101,7 @@ namespace zero_cost_serialization {
 		template <typename F, typename Args, typename... Ts, std::size_t... Is>
 		requires zero_cost_serialization::is_serializable_v<Ts...>
 		and ((not std::is_unbounded_array_v<std::tuple_element_t<Is, std::tuple<Ts...>>> or 1 + Is == sizeof...(Ts)) and ... and true)
-		decltype(auto) invoke(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept_test_v<F, Args, Ts...> and (not sizeof...(Ts) or not ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS))
+		auto invoke(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept_test_v<F, Args, Ts...> and (not sizeof...(Ts) or not ZERO_COST_SERIALIZATION_HAS_EXCEPTIONS)) -> decltype(auto)
 		{
 			if constexpr (sizeof...(Ts)) {
 				auto new_size = data.size();
@@ -239,7 +239,7 @@ namespace zero_cost_serialization {
 
 		template <typename... Ts>
 		requires zero_cost_serialization::is_serializable_v<Ts...>
-		decltype(auto) invoke(auto&& f, auto&& args, std::span<std::byte> data) noexcept(noexcept(detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data)))
+		auto invoke(auto&& f, auto&& args, std::span<std::byte> data) noexcept(noexcept(detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data))) -> decltype(auto)
 		{
 			return detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data);
 		}
@@ -250,27 +250,27 @@ namespace zero_cost_serialization {
 
 	template <typename... Ts>
 	requires zero_cost_serialization::is_serializable_v<Ts...>
-	decltype(auto) invoke(auto&& f, std::span<std::byte> data) noexcept(noexcept(detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::make_tuple(), data)))
+	auto invoke(auto&& f, std::span<std::byte> data) noexcept(noexcept(detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::make_tuple(), data))) -> decltype(auto)
 	{
 		return detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::make_tuple(), data);
 	}
 	template <typename... Ts>
 	requires zero_cost_serialization::is_serializable_v<Ts...>
-	decltype(auto) invoke(auto&& f, auto&& args, std::span<std::byte> data) noexcept(noexcept(detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data)))
+	auto invoke(auto&& f, auto&& args, std::span<std::byte> data) noexcept(noexcept(detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data))) -> decltype(auto)
 	{
 		return detail::invoke<Ts...>(std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), data);
 	}
 
 	template <typename... Ts, std::size_t N>
 	requires (zero_cost_serialization::is_serializable_v<Ts...> and N >= invoke_size_v<Ts...>)
-	decltype(auto) invoke(auto&& f, std::byte(&data)[N]) noexcept(noexcept(detail::invoke<decltype(f), std::tuple<>, Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::make_tuple(), std::span<std::byte, N>(data))))
+	auto invoke(auto&& f, std::byte(&data)[N]) noexcept(noexcept(detail::invoke<decltype(f), std::tuple<>, Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::make_tuple(), std::span<std::byte, N>(data)))) -> decltype(auto)
 	{
 		return detail::invoke<decltype(f), std::tuple<>, Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::make_tuple(), std::span(data));
 	}
 
 	template <typename... Ts, std::size_t N>
 	requires (zero_cost_serialization::is_serializable_v<Ts...> and N >= invoke_size_v<Ts...>)
-	decltype(auto) invoke(auto&& f, auto&& args, std::byte(&data)[N]) noexcept(noexcept(detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), std::span<std::byte, N>(data))))
+	auto invoke(auto&& f, auto&& args, std::byte(&data)[N]) noexcept(noexcept(detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), std::span<std::byte, N>(data)))) -> decltype(auto)
 	{
 		return detail::invoke<decltype(f), decltype(args), Ts...>(std::index_sequence_for<Ts...>(), std::forward<decltype(f)>(f), std::forward<decltype(args)>(args), std::span(data));
 	}

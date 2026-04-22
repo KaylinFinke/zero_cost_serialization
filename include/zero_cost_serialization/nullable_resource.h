@@ -2,6 +2,7 @@
 #define A46E5576CF4E4151A22523B417E98B27
 #ifdef A46E5576CF4E4151A22523B417E98B27
 #include <utility>
+#include <compare>
 #include <concepts>
 #include <istream>
 #include <ostream>
@@ -13,6 +14,8 @@ namespace zero_cost_serialization
 	template <std::regular T, T null_value = T{}>
 	struct nullable_resource
 	{
+		using value_type = T;
+
 		constexpr nullable_resource() noexcept = default;
 
 		explicit constexpr nullable_resource(const T& t) noexcept
@@ -23,43 +26,16 @@ namespace zero_cost_serialization
 			: value{ std::move(t) }
 		{}
 
-		constexpr nullable_resource(const std::nullptr_t&) noexcept
-			: value{null_value}
+		constexpr nullable_resource(std::nullptr_t) noexcept
+			: value{ null_value }
 		{}
-
-		constexpr nullable_resource(std::nullptr_t&&) noexcept
-			: value{null_value}
-		{}
-
-		explicit constexpr operator T() const& noexcept
-		{
-			return value;
-		}
-		explicit constexpr operator T() const&& noexcept
-		{
-			return value;
-		}
-		explicit constexpr operator T() && noexcept
-		{
-			return std::move(value);
-		}
-		explicit constexpr operator T() & noexcept
-		{
-			return value;
-		}
 
 		explicit constexpr operator bool() const noexcept
 		{
 			return null_value != value;
 		}
 
-		constexpr decltype(auto) operator=(std::nullptr_t&&) noexcept
-		{
-			value = null_value;
-			return *this;
-		}
-
-		constexpr decltype(auto) operator=(const std::nullptr_t&) noexcept
+		constexpr auto operator=(std::nullptr_t) noexcept -> decltype(auto)
 		{
 			value = null_value;
 			return *this;
@@ -101,22 +77,42 @@ namespace zero_cost_serialization
 			return rs.value == t;
 		}
 
-		friend constexpr auto swap(const nullable_resource& a, const nullable_resource& b) noexcept
+		friend constexpr auto swap(nullable_resource& a, nullable_resource& b) noexcept
 		{
 			using std::swap;
 			swap(a.value, b.value);
 		}
 
 		template <typename CharT, typename Traits>
-		friend decltype(auto) operator>>(std::basic_istream<CharT, Traits>& os, const nullable_resource& rs)
+		friend auto operator<<(std::basic_ostream<CharT, Traits>& os, const nullable_resource& rs) -> decltype(auto)
 		{
 			return os << rs.value;
 		}
 
 		template <typename CharT, typename Traits>
-		friend decltype(auto) operator>>(std::basic_istream<CharT, Traits>& is, nullable_resource& rs)
+		friend auto operator>>(std::basic_istream<CharT, Traits>& is, nullable_resource& rs) -> decltype(auto)
 		{
 			return is >> rs.value;
+		}
+
+		constexpr auto get() const& -> decltype(auto)
+		{
+			return (value);
+		}
+
+		constexpr auto get() const&& -> decltype(auto)
+		{
+			return std::move(value);
+		}
+
+		constexpr auto get() & -> decltype(auto)
+		{
+			return (value);
+		}
+
+		constexpr auto get() && -> decltype(auto)
+		{
+			return std::move(value);
 		}
 
 	private:
@@ -131,9 +127,9 @@ template <std::regular T, T null_value>
 struct std::hash<zero_cost_serialization::nullable_resource<T, null_value>>
 {
 	using is_transparent = void;
-	constexpr auto operator()(const zero_cost_serialization::nullable_resource<T, null_value>& rs) const noexcept(noexcept(std::hash<T>{}(T(rs))))
+	constexpr auto operator()(const zero_cost_serialization::nullable_resource<T, null_value>& rs) const noexcept(noexcept(std::hash<T>{}(rs.get())))
 	{
-		return std::hash<T>{}(T(rs));
+		return std::hash<T>{}(rs.get());
 	}
 	constexpr auto operator()(const auto& t) const noexcept(noexcept(std::hash<T>{}(t)))
 	{
@@ -147,7 +143,7 @@ struct std::formatter<zero_cost_serialization::nullable_resource<T, null_value>,
 	template <typename Iter>
 	auto format(const zero_cost_serialization::nullable_resource<T, null_value>& rs, std::basic_format_context<Iter, CharT>& ctx) const
 	{
-		return std::formatter<T, CharT>::format(T(rs), ctx);
+		return std::formatter<T, CharT>::format(rs.get(), ctx);
 	}
 };
 

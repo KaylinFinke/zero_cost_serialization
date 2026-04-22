@@ -316,7 +316,7 @@ namespace zero_cost_serialization::map {
 		ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS Right right;
 		ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS Parent parent;
 
-		constexpr decltype(auto) operator++()
+		constexpr auto operator++() -> decltype(auto)
 		{
 			x = detail::successor(rng, x, left, right, parent);
 			return *this;
@@ -327,11 +327,11 @@ namespace zero_cost_serialization::map {
 			++*this;
 			return copy;
 		}
-		constexpr decltype(auto) operator*() const
+		constexpr auto operator*() const -> decltype(auto)
 		{
 			return rng[zero_cost_serialization::detail::index<R>(x)];
 		}
-		constexpr decltype(auto) operator*()
+		constexpr auto operator*() -> decltype(auto)
 		{
 			return rng[zero_cost_serialization::detail::index<R>(x)];
 		}

@@ -298,7 +298,7 @@ namespace zero_cost_serialization::list {
 		list::link x;
 		ZERO_COST_SERIALIZATION_NO_UNIQUE_ADDRESS Next next;
 
-		constexpr decltype(auto) operator++()
+		constexpr auto operator++() -> decltype(auto)
 		{
 			x = zero_cost_serialization::detail::val<list::link>(std::forward<R>(rng), x, next);
 			return *this;
@@ -309,11 +309,11 @@ namespace zero_cost_serialization::list {
 			++*this;
 			return copy;
 		}
-		constexpr decltype(auto) operator*() const
+		constexpr auto operator*() const-> decltype(auto)
 		{
 			return rng[zero_cost_serialization::detail::index<R>(x)];
 		}
-		constexpr decltype(auto) operator*()
+		constexpr auto operator*()-> decltype(auto)
 		{
 			return rng[zero_cost_serialization::detail::index<R>(x)];
 		}
