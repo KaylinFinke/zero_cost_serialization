@@ -47,7 +47,7 @@ namespace zero_cost_serialization {
 			using value_type = std::size_t;
 			using difference_type = std::ptrdiff_t;
 			constexpr auto operator*() const noexcept { return i; }
-			constexpr decltype(auto) operator++() noexcept { ++i; return *this; }
+			constexpr auto operator++() noexcept -> decltype(auto) { ++i; return *this; }
 			[[maybe_unused]] constexpr auto operator++(int) noexcept { auto copy = *this; ++* this; return copy; }
 			constexpr auto operator<=>(const integer_iterator&) const noexcept = default;
 			value_type i;

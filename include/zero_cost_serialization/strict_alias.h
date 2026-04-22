@@ -77,7 +77,7 @@ namespace zero_cost_serialization {
 
 	template <typename T, typename U>
 	requires std::is_reference_v<T> and detail::strict_alias<std::remove_reference_t<T>, U>
-	decltype(auto) strict_alias_cast(U&& u) noexcept
+	auto strict_alias_cast(U&& u) noexcept -> decltype(auto)
 	{
 		return reinterpret_cast<T>(u);
 	}

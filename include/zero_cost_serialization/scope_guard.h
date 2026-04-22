@@ -28,7 +28,7 @@ namespace zero_cost_serialization
 			other.release();
 		}
 
-		decltype(auto) operator=(scope_exit&&) = delete;
+		auto operator=(scope_exit&&) = delete;
 
 		auto release() noexcept
 		{
@@ -70,7 +70,7 @@ namespace zero_cost_serialization
 			other.release();
 		}
 
-		decltype(auto) operator=(scope_fail&&) = delete;
+		auto operator=(scope_fail&&) = delete;
 
 		auto release() noexcept
 		{
@@ -110,7 +110,7 @@ namespace zero_cost_serialization
 			other.release();
 		}
 
-		decltype(auto) operator=(scope_success&&) = delete;
+		auto operator=(scope_success&&) = delete;
 
 		auto release() noexcept
 		{
@@ -187,7 +187,7 @@ ZERO_COST_SERIALIZATION_THIS_USED_IN_MEMBER_INIT
 			, enabled{std::exchange(other.enabled, false)}
 		{}
 
-		decltype(auto) operator=(unique_resource&& other) noexcept(std::is_nothrow_move_assignable_v<RS> and std::is_nothrow_move_assignable_v<D>)
+		auto operator=(unique_resource&& other) noexcept(std::is_nothrow_move_assignable_v<RS> and std::is_nothrow_move_assignable_v<D>) -> decltype(auto)
 		{
 			if (this != &other)
 			{
@@ -236,7 +236,7 @@ ZERO_COST_SERIALIZATION_THIS_USED_IN_MEMBER_INIT
 			enabled = { true };			
 		}
 
-		decltype(auto) get() const noexcept
+		auto get() const noexcept -> decltype(auto)
 		{
 			if constexpr (std::is_object_v<R>)
 				return (resource.value);
@@ -244,12 +244,12 @@ ZERO_COST_SERIALIZATION_THIS_USED_IN_MEMBER_INIT
 				return std::as_const(resource.value.get());
 		}
 
-		decltype(auto) get_deleter() const noexcept
+		auto get_deleter() const noexcept -> decltype(auto)
 		{
 			return (deleter.value);
 		}
 
-		decltype(auto) operator*() const noexcept requires(std::is_pointer_v<R> and not std::is_void_v<std::remove_pointer_t<R>>)
+		auto operator*() const noexcept -> decltype(auto) requires(std::is_pointer_v<R> and not std::is_void_v<std::remove_pointer_t<R>>)
 		{
 			return *get();
 		}

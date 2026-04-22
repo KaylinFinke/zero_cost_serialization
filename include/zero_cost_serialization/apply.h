@@ -13,7 +13,7 @@
 namespace zero_cost_serialization {
 	namespace detail {
 		template <typename F, typename Args, typename T, std::size_t... Is>
-		decltype(auto) apply(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data)))
+		auto apply(const std::index_sequence<Is...>&, F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data))) -> decltype(auto)
 		{
 			return zero_cost_serialization::invoke<std::remove_reference_t<std::tuple_element_t<Is, T>>...>(std::forward<F>(f), std::forward<Args>(args), data);
 		}
@@ -80,42 +80,42 @@ namespace zero_cost_serialization {
 
 	template <detail::empty_class T, typename F>
 	requires detail::is_unpack_invocable_v<F, T>
-	decltype(auto) apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::make_tuple(), data)))
+	auto apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::make_tuple(), data))) -> decltype(auto)
 	{
 		return detail::apply<F, std::tuple<>, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::make_tuple(), data);
 	}
 
 	template <detail::empty_class T, typename Args, typename F>
 	requires detail::is_unpack_invocable_v<F, T, Args>
-	decltype(auto) apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::forward<Args>(args), data)))
+	auto apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::forward<Args>(args), data))) -> decltype(auto)
 	{
 		return detail::apply<F, Args, std::tuple<>>(std::make_index_sequence<0>(), std::forward<F>(f), std::forward<Args>(args), data);
 	}
 
 	template <zero_cost_serialization::detail::reflectable_class T, typename F>
 	requires (detail::is_unpack_invocable_v<F, T> and not detail::is_unpack_invocable_flex_v<F, T>)
-	decltype(auto) apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::make_tuple(), data)))
+	auto apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::make_tuple(), data))) -> decltype(auto)
 	{
 		return detail::apply<F, std::tuple<>, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::make_tuple(), data);
 	}
 
 	template <zero_cost_serialization::detail::reflectable_class T, typename Args, typename F>
 	requires (detail::is_unpack_invocable_v<F, T, Args> and not detail::is_unpack_invocable_flex_v<F, T, Args>)
-	decltype(auto) apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::forward<Args>(args), data)))
+	auto apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::forward<Args>(args), data))) -> decltype(auto)
 	{
 		return detail::apply<F, Args, detail::tuple_of_refs<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs<T>>>(), std::forward<F>(f), std::forward<Args>(args), data);
 	}
 
 	template <zero_cost_serialization::detail::reflectable_class T, typename F>
 	requires detail::is_unpack_invocable_flex_v<F, T>
-	decltype(auto) apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::make_tuple(), data)))
+	auto apply(F&& f, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, std::tuple<>, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::make_tuple(), data))) -> decltype(auto)
 	{
 		return detail::apply<F, std::tuple<>, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::make_tuple(), data);
 	}
 
 	template <zero_cost_serialization::detail::reflectable_class T, typename Args, typename F>
 	requires detail::is_unpack_invocable_flex_v<F, T, Args>
-	decltype(auto) apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::forward<Args>(args), data)))
+	auto apply(F&& f, Args&& args, std::span<std::byte> data) noexcept(noexcept(detail::apply<F, Args, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::forward<Args>(args), data))) -> decltype(auto)
 	{
 		return detail::apply<F, Args, detail::tuple_of_refs_flex<T>>(std::make_index_sequence<std::tuple_size_v<detail::tuple_of_refs_flex_span<T>>>(), std::forward<F>(f), std::forward<Args>(args), data);
 	}
